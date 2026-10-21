@@ -115,3 +115,49 @@ Use **GL-01–GL-12** as stable planning IDs. GitHub issue numbers are assigned 
 - **Abuse/cost controls:** Maximum **30 successful agent-generation calls per UTC day** across the deployment, enforced atomically in PostgreSQL (not in-memory). Also reject when quota is exhausted (429), configure a **$50 Anthropic workspace spend limit**, and retain SDK timeout/retry safeguards. The spend cap is a backstop, not a substitute for server authorization.
 - **Human approvals:** All claims must be approved before use; every content draft and experiment proposal requires an explicit approval action, recorded with role, timestamp, decision, and relevant record ID. Rejected/unapproved records cannot advance.
 - **Open external dependencies:** Michelle must confirm the actual GrantReady brief/claims and accept her proposed tasks; the official course deadline/format must be verified. These remain real-world confirmations, not architecture choices.
+
+
+## 8. Updated Team Assignments — Joint Agreement (October 21, 2026)
+
+Michelle and Shawn have agreed to share technical development of GrowthLoop AI. This section supersedes conflicting earlier proposed assignments in this document. Both partners will write code, debug, test, review pull requests, and understand the full two-agent workflow.
+
+### Michelle — Content Agent Technical Lead
+- GL-02: Lead GrantReady hypothetical product brief, ICP, approved claims, banned phrases, and marketing examples; Shawn reviews.
+- GL-07: Own implementation of the Content Agent, Anthropic API integration, prompt design, structured control/variant drafts, Content DNA, Zod validation, claim checking, content approval UI, and unit tests.
+- GL-10: Implement the Content Agent's Cycle 2 memory-backed generation in collaboration with Shawn.
+- GL-03: Prepare the simulated metrics fixture and independently calculated KPI expectations, with Shawn supporting technical integration.
+- Participate in debugging, integration testing, code reviews, deployment verification, and final demonstration.
+
+### Shawn — Analytics & Experiment Agent Technical Lead
+- GL-04: Lead initial Next.js scaffold, dependencies, environment configuration, and Anthropic/PostgreSQL smoke tests; Michelle participates and reviews results.
+- GL-08: Own simulated-fixture ingestion and deterministic KPI implementation; Michelle verifies expected values.
+- GL-09: Own Analytics & Experiment Agent implementation, evidence-linked recommendations, uncertainty statements, experiment approval UI, and unit tests.
+- GL-05 and GL-10: Lead PostgreSQL/Prisma persistence and Experiment Memory implementation, collaborating with Michelle on handoff contracts.
+- Participate in debugging, integration testing, code reviews, deployment verification, and final demonstration.
+
+### Shared Technical Ownership
+- GL-01: Jointly confirm MVP scope, approval rules, budget, deadline, and course deliverables.
+- GL-05: Jointly review TypeScript/Zod contracts and data model.
+- GL-06: Jointly implement and review controller integration, approval state transitions, error handling, and agent handoffs.
+- GL-10: Integrate saved Experiment Memory with Cycle 2 Content Agent generation.
+- GL-11: Jointly perform end-to-end testing, security checks, deployment, and troubleshooting.
+- GL-12: Jointly rehearse, document actual test evidence, and approve the final demonstration and submission.
+
+### Revised Five-Working-Day Delivery Plan
+- D1 — Wednesday, October 21: Joint scope/role confirmation; Michelle prepares GrantReady inputs and begins Content Agent contract planning; Shawn scaffolds infrastructure and smoke tests. Both review interface contracts.
+- D2 — Thursday, October 22: Michelle implements Content Agent and content approval UI; Shawn implements controller foundation, database schema, and supporting integration. Both test draft generation and approval.
+- D3 — Friday, October 23: Shawn implements fixture ingestion, deterministic KPIs, Analytics Agent, and experiment approval; Michelle completes Content Agent tests and reviews KPI accuracy. Both integrate Cycle 1.
+- D4 — Monday, October 26: Both integrate Experiment Memory and Cycle 2 generation, test the complete workflow, troubleshoot, and verify deployment or documented local fallback. Feature freeze after testing.
+- D5 — Tuesday, October 27: Both resolve critical bugs, run final tests, rehearse the demo, verify documentation, and complete joint sign-off. No new features.
+
+### Collaboration and Debugging Practices
+- Each partner develops assigned features on separate branches and submits pull requests for review.
+- Both partners review interface changes before merging and avoid simultaneous edits to the same files.
+- Each pull request includes relevant test results, known limitations, and debugging notes.
+- Both partners practice explaining the controller, Content Agent, Analytics Agent, and Experiment Memory.
+- Debugging efficiency and complete-system understanding are explicit shared learning goals.
+
+### Documentation and Sign-off
+Update PRD.md, PRE_BUILD_CHECKLIST.md, and README.md consistently. Record actual decisions and approvals in docs/decisions.md when created. Prepare the official Pursuit Multi-Agent PRD Google Doc collaboratively and submit its link through Pathfinder according to confirmed course requirements.
+
+These assignments reflect the partners' agreement in principle. No completed implementation, tests, deployment, GitHub Issues, or formal release approval are implied.
