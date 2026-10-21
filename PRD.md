@@ -137,3 +137,40 @@ Real customer validation, verified claims, real analytics and CRM connectors, co
 - **Abuse/cost controls:** Maximum **30 successful agent-generation calls per UTC day** across the deployment, enforced atomically in PostgreSQL (not in-memory). Also reject when quota is exhausted (429), configure a **$50 Anthropic workspace spend limit**, and retain SDK timeout/retry safeguards. The spend cap is a backstop, not a substitute for server authorization.
 - **Human approvals:** All claims must be approved before use; every content draft and experiment proposal requires an explicit approval action, recorded with role, timestamp, decision, and relevant record ID. Rejected/unapproved records cannot advance.
 - **Open external dependencies:** Michelle must confirm the actual GrantReady brief/claims and accept her proposed tasks; the official course deadline/format must be verified. These remain real-world confirmations, not architecture choices.
+
+
+## 15. Joint Technical Ownership and Collaboration Agreement (October 21, 2026)
+
+Michelle and Shawn have agreed to share technical implementation responsibilities for the GrowthLoop AI MVP. This section supersedes earlier proposed role assignments in this document where they conflict. Both partners will participate in coding, debugging, testing, integration, and understanding the complete system.
+
+### Michelle — Content Agent Technical Lead
+- Implement the Content Agent using the Anthropic API and TypeScript.
+- Develop prompts that generate two structured LinkedIn marketing drafts (control and variant) using approved GrantReady demonstration claims.
+- Implement Content DNA output, Zod schema validation, and claim-checking logic.
+- Build the content review and approval interface.
+- Write unit tests, investigate bugs, and integrate Content Agent outputs with the shared controller and Experiment Memory.
+- Lead preparation of the hypothetical GrantReady product brief, ICP, approved claims, and content examples.
+
+### Shawn — Analytics & Experiment Agent Technical Lead
+- Implement the Analytics & Experiment Agent using the Anthropic API and TypeScript.
+- Develop deterministic KPI calculations and simulated-metrics ingestion.
+- Implement experiment recommendations, evidence references, uncertainty statements, and approval workflows.
+- Lead PostgreSQL persistence and Experiment Memory implementation.
+- Write unit tests, investigate bugs, and integrate analytics outputs with the shared controller.
+
+### Shared Engineering Responsibilities
+- Jointly review architecture, agent handoff contracts, Zod schemas, controller state transitions, and failure handling.
+- Collaborate on controller integration, security, deployment, end-to-end testing, and final demonstration.
+- Use feature branches, meaningful commits, pull requests, and mutual code reviews.
+- Document debugging steps and test evidence so both partners learn to diagnose problems efficiently.
+- Ensure both partners can explain and demonstrate the complete two-agent workflow, not only their individual components.
+
+### Product Scope and Course Deliverables
+GrowthLoop AI is the application being developed for Pursuit Cycle 3. GrantReady is the hypothetical product being marketed in the demonstration; grant discovery or grant application features are outside this MVP.
+
+The GitHub PRD must also be adapted collaboratively into Pursuit's official Multi-Agent PRD Google Docs template, with the required document link submitted through Pathfinder. The official deadline and submission details remain to be verified.
+
+### Implementation and Approval Notes
+This agreement updates the proposed ownership of GL-05 through GL-12 and the five-day schedule; TEAM_TASKS.md, PRE_BUILD_CHECKLIST.md, and README.md must be aligned before the plan is treated as final. Existing technical architecture and acceptance criteria remain in effect unless jointly changed.
+
+No implementation, tests, deployment, or formal GitHub sign-off are claimed completed by this section.

@@ -140,3 +140,74 @@ Only publish commands in this README as **verified working instructions** after 
 - **Abuse/cost controls:** Maximum **30 successful agent-generation calls per UTC day** across the deployment, enforced atomically in PostgreSQL (not in-memory). Also reject when quota is exhausted (429), configure a **$50 Anthropic workspace spend limit**, and retain SDK timeout/retry safeguards. The spend cap is a backstop, not a substitute for server authorization.
 - **Human approvals:** All claims must be approved before use; every content draft and experiment proposal requires an explicit approval action, recorded with role, timestamp, decision, and relevant record ID. Rejected/unapproved records cannot advance.
 - **Open external dependencies:** Michelle must confirm the actual GrantReady brief/claims and accept her proposed tasks; the official course deadline/format must be verified. These remain real-world confirmations, not architecture choices.
+
+
+## Joint Technical Ownership and Development Plan — October 21, 2026
+
+GrowthLoop AI is a collaborative Pursuit Cycle 3 multi-agent project developed by Michelle Sainsbury and Shawn Bi. Both partners have agreed to participate directly in coding, debugging, testing, integration, and understanding the complete application.
+
+This section supersedes earlier proposed responsibility assignments in this README where they conflict. The original architecture, MVP boundaries, security requirements, and acceptance criteria remain in effect unless jointly revised.
+
+### Product Direction
+
+GrowthLoop AI is the application being developed. GrantReady is the hypothetical B2B SaaS product used as the demonstration marketing customer. The MVP does not build GrantReady's grant discovery, matching, eligibility, or application features.
+
+The demonstration uses two specialized AI agents connected through a deterministic TypeScript controller, with human approval gates and persistent Experiment Memory. Marketing performance metrics are pre-authored simulated data, not real campaign outcomes.
+
+### Michelle — Content Agent Technical Lead
+
+Michelle owns implementation of the Content Agent, including:
+- Anthropic API integration and prompt development.
+- Generation of two structured LinkedIn marketing drafts: control and variant.
+- Content DNA output, TypeScript/Zod schema validation, and approved-claim checks.
+- Content review and approval interface.
+- Unit tests, debugging, and integration with the shared controller.
+- Cycle 2 memory-backed content generation in collaboration with Shawn.
+- Preparation and review of GrantReady demonstration facts, ICP, approved claims, and marketing examples.
+
+### Shawn — Analytics & Experiment Agent Technical Lead
+
+Shawn owns implementation of the Analytics & Experiment Agent and related components, including:
+- Simulated campaign-metrics ingestion and deterministic KPI calculations.
+- Anthropic API integration, analytics prompts, and structured experiment proposals.
+- Evidence-linked recommendations, uncertainty statements, and one-variable test proposals.
+- Experiment proposal review and approval interface.
+- Prisma/PostgreSQL persistence and Experiment Memory implementation.
+- Unit tests, debugging, and integration with the shared controller.
+- Initial application scaffolding and environment smoke tests, with Michelle participating in technical review.
+
+### Shared Engineering Responsibilities
+
+Both partners share responsibility for:
+- Architecture reviews and versioned agent handoff contracts.
+- TypeScript/Zod schemas, controller integration, state transitions, and failure handling.
+- Human approval gates, data provenance, security, and cost controls.
+- Feature branches, meaningful commits, pull requests, and mutual code reviews.
+- End-to-end testing, debugging, deployment verification, and documentation.
+- Demonstrating and explaining the complete two-agent workflow.
+
+### Five-Working-Day Implementation Plan
+
+- Day 1 — Wednesday, October 21: Confirm scope and responsibilities; prepare GrantReady inputs; scaffold infrastructure; review agent contracts and smoke-test results.
+- Day 2 — Thursday, October 22: Michelle develops the Content Agent and content approval interface; Shawn develops controller and persistence foundations; both test integration.
+- Day 3 — Friday, October 23: Shawn develops KPI processing and the Analytics Agent; Michelle completes Content Agent testing and KPI verification; both integrate Cycle 1.
+- Day 4 — Monday, October 26: Both integrate Experiment Memory and Cycle 2 draft generation, test the complete workflow, resolve critical issues, and verify deployment or local fallback.
+- Day 5 — Tuesday, October 27: Both complete final testing, documentation, demonstration rehearsals, and joint sign-off.
+
+October 27 is the internal demonstration target; the official Pursuit submission deadline and requirements must be verified.
+
+### Shared Learning Goals
+
+1. Both partners will understand the complete application, not only their individually owned components.
+2. Both partners will improve debugging efficiency through systematic reproduction, error analysis, targeted testing, and documented fixes.
+3. Both partners will develop greater confidence implementing and integrating AI agents, deterministic application logic, and persistent memory.
+
+### Pursuit PRD and Submission
+
+The GitHub PRD must be collaboratively adapted into Pursuit's official Multi-Agent PRD Google Docs template. The completed document link must be submitted through Pathfinder according to confirmed course requirements.
+
+See PRD.md for product requirements, TEAM_TASKS.md for detailed assignments, and PRE_BUILD_CHECKLIST.md for readiness and verification tasks.
+
+### Current Implementation Status
+
+This section documents the agreed development plan. It does not claim that the application, tests, deployment, GitHub Issues, or official course submission have been completed. Actual progress and test evidence must be recorded as implementation proceeds.
