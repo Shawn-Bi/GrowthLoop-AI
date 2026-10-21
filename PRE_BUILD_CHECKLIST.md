@@ -119,3 +119,68 @@
 - **Abuse/cost controls:** Maximum **30 successful agent-generation calls per UTC day** across the deployment, enforced atomically in PostgreSQL (not in-memory). Also reject when quota is exhausted (429), configure a **$50 Anthropic workspace spend limit**, and retain SDK timeout/retry safeguards. The spend cap is a backstop, not a substitute for server authorization.
 - **Human approvals:** All claims must be approved before use; every content draft and experiment proposal requires an explicit approval action, recorded with role, timestamp, decision, and relevant record ID. Rejected/unapproved records cannot advance.
 - **Open external dependencies:** Michelle must confirm the actual GrantReady brief/claims and accept her proposed tasks; the official course deadline/format must be verified. These remain real-world confirmations, not architecture choices.
+
+
+## Updated Joint Pre-Build Checklist — October 21, 2026
+
+This section reflects Michelle and Shawn's agreement to share technical implementation of GrowthLoop AI. It supersedes conflicting earlier role assignments in this checklist. All existing security, data-validation, cost-control, and human-approval requirements remain applicable.
+
+### 1. Joint Project Decisions
+- [ ] Confirm GrowthLoop AI as the Pursuit Cycle 3 multi-agent application.
+- [ ] Confirm GrantReady as the hypothetical product used in the marketing demonstration, not a grant discovery application being built during this cycle.
+- [ ] Review and approve the two-agent MVP scope, including Cycle 2 ending after generation of two new drafts.
+- [ ] Confirm Michelle as Content Agent technical lead and Shawn as Analytics & Experiment Agent technical lead.
+- [ ] Confirm shared responsibility for controller integration, testing, debugging, deployment, and understanding the complete workflow.
+- [ ] Verify the official Pursuit deadline and required Pathfinder submission materials.
+- [ ] Record joint decisions and approvals without claiming incomplete work is finished.
+
+### 2. Michelle — Content Agent Development Readiness
+- [ ] Prepare the hypothetical GrantReady product brief, ICP, approved claims, banned phrases, and labeled content examples.
+- [ ] Review Content Agent input/output contracts with Shawn before implementation.
+- [ ] Confirm Anthropic API access and the agreed TypeScript/Zod development approach.
+- [ ] Implement Content Agent prompts and structured control/variant LinkedIn draft generation.
+- [ ] Implement Content DNA output and Zod schema validation.
+- [ ] Implement approved-claim checks and rejection or review handling for unsupported claims.
+- [ ] Implement the content review and approval interface.
+- [ ] Write unit tests using mocked agent responses and document actual results.
+- [ ] Integrate Content Agent outputs with the shared controller.
+- [ ] Implement Cycle 2 memory-backed draft generation in collaboration with Shawn.
+- [ ] Participate in debugging, pull-request reviews, integration testing, and deployment verification.
+
+### 3. Shawn — Analytics & Experiment Agent Development Readiness
+- [ ] Scaffold the Next.js/TypeScript application and verify required environment configuration.
+- [ ] Confirm Anthropic, PostgreSQL/Neon, and deployment smoke-test results.
+- [ ] Review agent handoff contracts and shared data schemas with Michelle.
+- [ ] Implement simulated-metrics ingestion and deterministic KPI calculations.
+- [ ] Verify calculated KPIs against Michelle's independently prepared expected values.
+- [ ] Implement Analytics & Experiment Agent prompts, structured output, metric references, uncertainty statements, and one-variable next-test proposals.
+- [ ] Implement experiment proposal review and approval interface.
+- [ ] Lead Prisma/PostgreSQL persistence and Experiment Memory implementation.
+- [ ] Write unit tests using mocked agent responses and document actual results.
+- [ ] Participate in debugging, pull-request reviews, integration testing, and deployment verification.
+
+### 4. Shared Engineering and Integration Checks
+- [ ] Agree on versioned Content Agent and Analytics Agent input/output contracts.
+- [ ] Review TypeScript/Zod schemas, database entities, and controller state transitions together.
+- [ ] Ensure agents cannot bypass deterministic validation, KPI calculations, approval gates, or database controls.
+- [ ] Test the full Cycle 1 workflow from approved brief to saved experiment proposal.
+- [ ] Test the Cycle 2 handoff from persisted Experiment Memory to new Content Agent drafts.
+- [ ] Verify rejected or unapproved content and experiments cannot advance.
+- [ ] Verify simulated metrics remain clearly labeled and are never represented as real campaign outcomes.
+- [ ] Verify database persistence after application restart or redeployment.
+- [ ] Verify existing API key protection, access controls, call quotas, and spend-limit requirements.
+- [ ] Review each other's pull requests and record actual test evidence.
+- [ ] Practice debugging together and document root causes and fixes.
+- [ ] Confirm both partners can explain and demonstrate the complete system.
+
+### 5. Documentation, Demo, and Submission
+- [ ] Align PRD.md, TEAM_TASKS.md, PRE_BUILD_CHECKLIST.md, and README.md with the agreed technical responsibilities.
+- [ ] Record actual joint decisions in docs/decisions.md when created.
+- [ ] Collaboratively complete Pursuit's official Multi-Agent PRD Google Docs template.
+- [ ] Submit the official PRD link through Pathfinder according to verified requirements.
+- [ ] Rehearse the complete two-agent demonstration together.
+- [ ] Record actual tests, unresolved issues, and deployment status.
+- [ ] Obtain joint approval before treating the project as ready for final submission.
+
+### Completion Status
+All checklist items above are initially unchecked. This section documents agreed responsibilities and planned verification steps; it does not claim that coding, tests, deployment, or course submission have been completed.
