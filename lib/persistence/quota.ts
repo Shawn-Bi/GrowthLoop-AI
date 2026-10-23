@@ -1,14 +1,13 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { ControllerError } from "@/lib/controller/errors";
 
 // PRD fixed operating policy: at most 30 successful agent generations per
 // UTC day across the whole deployment.
 export const DAILY_GENERATION_LIMIT = 30;
 
-export class QuotaExceededError extends Error {
-  readonly httpStatus = 429;
-
+export class QuotaExceededError extends ControllerError {
   constructor(day: string, limit: number) {
-    super(`Daily generation limit of ${limit} reached for ${day} (UTC).`);
+    super(`Daily generation limit of ${limit} reached for ${day} (UTC).`, 429);
     this.name = "QuotaExceededError";
   }
 }

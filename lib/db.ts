@@ -1,6 +1,7 @@
 import "server-only";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { ControllerError } from "@/lib/controller/errors";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
@@ -12,7 +13,7 @@ export function getDb(): PrismaClient {
     const connectionString = process.env.DATABASE_URL;
 
     if (!connectionString) {
-      throw new Error("DATABASE_URL is not set.");
+      throw new ControllerError("The database is not configured (DATABASE_URL).", 503);
     }
 
     globalForPrisma.prisma = new PrismaClient({

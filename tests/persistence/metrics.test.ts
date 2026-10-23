@@ -1,24 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createRootExperiment } from "@/lib/persistence/experiments";
 import { loadMetricRecords, saveMetricRecords } from "@/lib/persistence/metrics";
 import { recordAgentRun } from "@/lib/persistence/proposals";
 import { metrics } from "../analytics/fixtures";
-import { createTestDb, type TestDb } from "./db";
+import { setupTestDb, type TestDb } from "./db";
 
+const getTestDb = setupTestDb();
 let testDb: TestDb;
 
 beforeEach(async () => {
-  testDb = await createTestDb();
+  testDb = getTestDb();
   await createRootExperiment(testDb.db, {
     id: "exp_001",
     correlationId: "corr_001",
     hypothesis: "h",
     primaryTestVariable: "hook",
   });
-});
-
-afterEach(async () => {
-  await testDb.close();
 });
 
 describe("metric records", () => {
