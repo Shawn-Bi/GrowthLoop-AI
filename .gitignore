@@ -7,6 +7,9 @@
 # Dependencies
 node_modules/
 
+# Generated Prisma client (npm install runs prisma generate)
+/generated/
+
 # Next.js and build files
 .next/
 out/
