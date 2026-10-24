@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { AnalyticsInput } from "@/lib/agents/analytics/prompt";
 import { toProposalRecord } from "@/lib/agents/analytics/proposal";
 import type { AnalyticsRunResult } from "@/lib/agents/analytics/run";
@@ -6,6 +6,7 @@ import { buildMetricRecords } from "@/lib/kpi/calculate";
 import { ingestFixture, type QuarantinedRow } from "@/lib/kpi/ingest";
 import { loadUsableClaimIds } from "@/lib/persistence/claims";
 import {
+  createRootExperiment,
   decideProposalAndAdvance,
   type DecisionResult,
 } from "@/lib/persistence/experiments";
@@ -22,7 +23,7 @@ import {
   releaseGenerationSlot,
   reserveGenerationSlot,
 } from "@/lib/persistence/quota";
-import type { ProposalRecord } from "@/schemas/analytics";
+import type { ProposalRecord, TestVariable } from "@/schemas/analytics";
 import type { Decision, ReviewerRole } from "@/schemas/audit";
 import { ControllerError, TransitionError } from "./errors";
 import { nextSequentialId } from "./ids";
@@ -230,4 +231,36 @@ export async function decideExperimentProposal(
     now,
     next,
   });
+}
+
+// The MVP runs one campaign (PRD §2), so Cycle 1 is always exp_001. Later
+// cycles take their IDs from their parent (exp_001 → exp_002), which a
+// second root experiment would collide with.
+export const CYCLE_ONE_EXPERIMENT_ID = "exp_001";
+
+export async function createCycleOneExperiment(
+  db: PrismaClient,
+  input: { hypothesis: string; primaryTestVariable: TestVariable }
+): Promise<{ experiment_id: string; correlation_id: string }> {
+  const experimentId = CYCLE_ONE_EXPERIMENT_ID;
+  const correlationId = `corr_${experimentId}`;
+
+  try {
+    await createRootExperiment(db, {
+      id: experimentId,
+      correlationId,
+      hypothesis: input.hypothesis,
+      primaryTestVariable: input.primaryTestVariable,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new TransitionError(`${experimentId} already exists.`, 409);
+    }
+    throw error;
+  }
+
+  return { experiment_id: experimentId, correlation_id: correlationId };
 }
