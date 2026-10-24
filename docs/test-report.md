@@ -12,7 +12,7 @@ This report records actual results only (PRD §10). Anything not run is marked a
 | S1 Anthropic real API | ✅ Pass | `npm run smoke:anthropic` |
 | S1b Content DNA schema | ⏳ Not run | Waits for the Content Agent (GL-07) |
 | S2 Neon persistence (local) | ✅ Pass | `npm run db:migrate`, `smoke:db:write` → new process → `smoke:db:read` → `smoke:db:cleanup` |
-| S2 Vercel preview | ⏳ In progress | Write passed; read-back after a redeploy pending |
+| S2 Vercel preview | ✅ Pass | `smoke:deploy:write` → redeploy → `smoke:deploy:read` → `smoke:deploy:cleanup` |
 | S3 secrets and client boundary | ✅ Pass | Bundle scan, `.env.local` gitignored, smoke output scan |
 | S4 Vercel runtime | ✅ Pass | `npm run smoke:deploy`, `smoke:deploy:write` against the preview |
 | S5 access protection and daily cap | ✅ Pass (local) | Automated route tests, plus browser and HTTP checks against `next start` |
@@ -53,7 +53,8 @@ This report records actual results only (PRD §10). Anything not run is marked a
   - The protected real Anthropic route, `POST /api/experiments/exp_smoke_001/analysis`, returned 201 in **11.8 s**, within the 120 s budget (`maxDuration`), with 0 review flags.
   - The fixture route returned 201 in about 1 s, which shows `data/fixtures` is traced into the function bundle.
 - **S2 write through the deployment:** seeding `exp_smoke_001`, loading metrics, analysing and approving created `exp_smoke_002` and its handoff in Neon through the deployed app.
-- **S2 read after a redeploy:** pending.
+- **S2 read after a redeploy:** pushing `3ff27e1` produced a new deployment, `BCdwk…`; the write had run on `BARus…`. The redeployed app returned `exp_smoke_002`, its parent link and its handoff (200), and the trace `exp_smoke_001 → exp_smoke_002`.
+- **Cleanup:** `smoke:deploy:cleanup` removed the `exp_smoke_*` rows, and the preview now returns 404 for them. The run used one of the day's 30 generation slots.
 
 ## S3 / S5 — Secrets and access
 
@@ -67,4 +68,4 @@ This report records actual results only (PRD §10). Anything not run is marked a
 
 - The two-cycle E2E with real Content Agent drafts (GL-10/GL-11).
 - KPI exact match against Michelle's `expected.json` (GL-03/GL-08).
-- Any deployed environment.
+- A production deployment of this stack: `main` doesn't include it until #3–#7 merge.
