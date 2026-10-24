@@ -12,9 +12,9 @@ This report records actual results only (PRD §10). Anything not run is marked a
 | S1 Anthropic real API | ✅ Pass | `npm run smoke:anthropic` |
 | S1b Content DNA schema | ⏳ Not run | Waits for the Content Agent (GL-07) |
 | S2 Neon persistence (local) | ✅ Pass | `npm run db:migrate`, `smoke:db:write` → new process → `smoke:db:read` → `smoke:db:cleanup` |
-| S2 Vercel preview | ⏳ Not run | No Vercel project yet |
+| S2 Vercel preview | ⏳ In progress | Write passed; read-back after a redeploy pending |
 | S3 secrets and client boundary | ✅ Pass | Bundle scan, `.env.local` gitignored, smoke output scan |
-| S4 Vercel runtime | ⏳ Not run | No Vercel project yet |
+| S4 Vercel runtime | ✅ Pass | `npm run smoke:deploy`, `smoke:deploy:write` against the preview |
 | S5 access protection and daily cap | ✅ Pass (local) | Automated route tests, plus browser and HTTP checks against `next start` |
 | S6 no-cost unit tests | ✅ Pass | `npm test`: 129/129, with mocked Anthropic and PGlite |
 
@@ -41,6 +41,19 @@ This report records actual results only (PRD §10). Anything not run is marked a
   - the same API with the bearer access code reached Neon (404 for an unknown experiment);
   - an unauthenticated page returned 307 to `/access`.
 - **Not run yet:** Vercel preview write → redeploy → read (S2) and the S4 runtime checks.
+
+## S4 / S2 — Vercel preview
+
+- **Setup:** Vercel project `growth-loop-ai`, imported from GitHub. Each branch gets a preview at its branch URL; this run used `feature/gl-06-controller-api`, commit `6953c9a`, which built in about 1 minute. All five variables are set on Vercel, and Node 24 comes from `engines`.
+- **Two layers of protection, both active:**
+  - Without the automation bypass header, Vercel Authentication answers with a 302 to its login page.
+  - With the bypass header but without the app's access code, `/api/experiments/*` returns the app's own JSON 401, and `/experiments` returns 307 to `/access`.
+- **S4 runtime:**
+  - `GET /api/health` returned 200 in about 0.3 s.
+  - The protected real Anthropic route, `POST /api/experiments/exp_smoke_001/analysis`, returned 201 in **11.8 s**, within the 120 s budget (`maxDuration`), with 0 review flags.
+  - The fixture route returned 201 in about 1 s, which shows `data/fixtures` is traced into the function bundle.
+- **S2 write through the deployment:** seeding `exp_smoke_001`, loading metrics, analysing and approving created `exp_smoke_002` and its handoff in Neon through the deployed app.
+- **S2 read after a redeploy:** pending.
 
 ## S3 / S5 — Secrets and access
 
