@@ -29,7 +29,7 @@
 - [x] Local repository cloned, branch/PR workflow agreed, 4 Markdown files uploaded and linked correctly. — feature branches and stacked PRs in use.
 - [x] Node **24.x** installed; package versions pinned exactly and lockfile committed. Proposed as of Oct 21: Next 16.4.2; React 19.3.1; TS 5.9.3; Prisma/client/adapter-pg 7.10.1; Anthropic SDK 0.137.0; Zod 4.6.7; Tailwind 4.3.3; Vitest 5.0.5. Verify package availability before installing. — PR #3; installed versions match the targets.
 - [x] One Next.js + TypeScript app; **no Python, FastAPI, SQLite, or monorepo**.
-- [ ] Anthropic Console: key created, candidate model ID actually accessible, spend limit set. Never log or screenshot key. — key and `claude-sonnet-5-5` verified in S1 on 2026-10-23; **spend limit not yet confirmed**.
+- [x] Anthropic Console: key created, candidate model ID actually accessible, spend limit set. Never log or screenshot key. — key and `claude-sonnet-5-5` verified in S1 on 2026-10-23; spend limit not applicable (school-provided key), the daily cap is the cost control.
 - [x] Neon PostgreSQL project/branch ready; runtime pooled `DATABASE_URL`, migrations/direct `DATABASE_URL_UNPOOLED`; confirm adapter-pg works, switch adapter only if smoke evidence requires. — S2 on 2026-10-23.
 - [ ] Vercel project linked; verify Node 24, runtime limits/Fluid compute and terms of plan; use preview first. — project `growth-loop-ai` linked and previews used; Node 24 via `engines`; `maxDuration` 120 s accepted by the build; Fluid compute and plan terms not checked.
 - [x] `.env.example` includes only variable names: `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `DEMO_ACCESS_CODE`. — also lists the two smoke-only names.

@@ -49,7 +49,7 @@
 
 | # | Decision | Status | Where |
 |---|---|---|---|
-| 5.1 | $50 Anthropic workspace spend limit. | Fixed / **Open**: Shawn to confirm it is set in the Console | PRD §9 |
+| 5.1 | No Anthropic spend limit: the API key is provided by the school and has no limit we can set, so the PRD's $50 cap doesn't apply. The daily cap (5.2) is the cost control. | Not applicable | PRD §9 |
 | 5.2 | Max 30 successful agent generations per UTC day, counted atomically in Postgres. A slot is released when a call fails, and requests past the cap get 429. | Implemented | `lib/persistence/quota.ts`, PR #6/#7 |
 | 5.3 | The Analytics Agent runs at `effort: "medium"` with `max_tokens` 16000. The analysis route has `maxDuration` 120 s; on the preview it took 11.8 s. | Implemented | PR #5/#7 |
 
@@ -80,7 +80,7 @@
 | Account | Owner |
 |---|---|
 | GitHub repo `Shawn-Bi/GrowthLoop-AI` | Shawn |
-| Anthropic API key / workspace | Shawn |
+| Anthropic API key | Provided by the school (Pursuit); used by Shawn |
 | Neon project | Shawn |
 | Vercel project `growth-loop-ai` (team `shawn-9964`) | Shawn |
 
@@ -95,6 +95,6 @@ Only actual approvals are filled in.
 | Scope, deferrals, two-cycle demo (§1) | Pending | Pending | |
 | Ownership and reviewer roles (§1.5, §4.1) | Pending | Pending | |
 | KPI, fixture and claim policy (§2–§3) | Pending | Pending | |
-| Access, spend cap and daily cap (§4–§5) | Pending | Pending | |
+| Access and daily cap (§4–§5) | Pending | Pending | |
 | Contracts (§7) | Pending | Pending | |
 | Official deadline and submission (§1.4) | Pending | Pending | |
