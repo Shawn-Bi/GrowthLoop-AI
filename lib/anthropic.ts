@@ -1,5 +1,6 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
+import { ControllerError } from "@/lib/controller/errors";
 
 let client: Anthropic | undefined;
 
@@ -16,7 +17,7 @@ export function getAnthropicModel(): string {
   const model = process.env.ANTHROPIC_MODEL;
 
   if (!model) {
-    throw new Error("ANTHROPIC_MODEL is not set.");
+    throw new ControllerError("Anthropic is not configured (ANTHROPIC_MODEL).", 503);
   }
 
   return model;

@@ -17,7 +17,11 @@
     "smoke:anthropic": "vitest run --config vitest.smoke.config.mts smoke/anthropic.smoke.ts",
     "smoke:db:write": "vitest run --config vitest.smoke.config.mts smoke/postgres.smoke.ts -t \"S2 (config|write)\"",
     "smoke:db:read": "vitest run --config vitest.smoke.config.mts smoke/postgres.smoke.ts -t \"S2 (config|read)\"",
-    "smoke:db:cleanup": "vitest run --config vitest.smoke.config.mts smoke/postgres.smoke.ts -t \"S2 (config|cleanup)\""
+    "smoke:db:cleanup": "vitest run --config vitest.smoke.config.mts smoke/postgres.smoke.ts -t \"S2 (config|cleanup)\"",
+    "smoke:deploy": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S4)\"",
+    "smoke:deploy:write": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S2 write)\"",
+    "smoke:deploy:read": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S2 read)\"",
+    "smoke:deploy:cleanup": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S2 cleanup)\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.137.0",

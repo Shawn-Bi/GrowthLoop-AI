@@ -99,6 +99,29 @@ describe("reviewAnalysis", () => {
     ]);
   });
 
+  it("doesn't flag negated disclaimers", () => {
+    const output = validOutput();
+    output.summary =
+      "These simulated outcomes were not caused by the posts, and no statistical significance can be claimed. The data cannot prove a real lift.";
+
+    expect(reviewAnalysis(output, metrics)).toEqual({
+      ok: true,
+      review_flags: [],
+    });
+  });
+
+  it("still flags a claim that follows a disclaimer", () => {
+    const output = validOutput();
+    output.summary =
+      "This is not real data. The pain-point hook caused more qualified demo requests.";
+
+    const review = reviewAnalysis(output, metrics);
+
+    expect(review.ok && review.review_flags).toEqual([
+      'Possible causal or overconfident wording: "caused".',
+    ]);
+  });
+
   it("flags findings that cite a not_calculable metric", () => {
     const zeroVisits = metrics.map((metric) =>
       metric.metric_id === controlPrimary && metric.kind === "rate"
