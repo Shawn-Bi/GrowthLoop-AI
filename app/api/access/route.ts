@@ -1,17 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import {
   SESSION_COOKIE,
-  checkAccessCode,
   isAccessConfigured,
   issueSessionToken,
   sessionCookieOptions,
 } from "@/lib/auth/access";
+import { verifyAccessCode } from "@/lib/auth/verify";
+import { errorResponse } from "@/lib/controller/http";
+import { getDb } from "@/lib/db";
 
 const bodySchema = z.object({ code: z.string().min(1) });
 
 // Exchanges the shared demo access code for an HttpOnly session cookie.
-export async function POST(request: Request) {
+// Attempts are limited per client (429 with Retry-After).
+export async function POST(request: NextRequest) {
   if (!isAccessConfigured()) {
     return Response.json({ error: "Access is not configured." }, { status: 503 });
   }
@@ -21,8 +24,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "Enter the access code." }, { status: 400 });
   }
 
-  if (!checkAccessCode(body.data.code)) {
-    return Response.json({ error: "Invalid access code." }, { status: 401 });
+  try {
+    const valid = await verifyAccessCode(
+      getDb(),
+      body.data.code,
+      request.headers,
+      new Date()
+    );
+    if (!valid) {
+      return Response.json({ error: "Invalid access code." }, { status: 401 });
+    }
+  } catch (error) {
+    return errorResponse(error, request);
   }
 
   const response = NextResponse.json({ ok: true });

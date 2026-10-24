@@ -1,15 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isAuthorizedRequest } from "@/lib/auth/access";
+import { hasValidSession } from "@/lib/auth/access";
 
 // First line of defence for every private page and API route. Route
 // handlers and pages check access again close to the data.
 export function proxy(request: NextRequest) {
-  if (isAuthorizedRequest(request)) {
-    return NextResponse.next();
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    // A bearer code is verified, and rate-limited, by the route handler.
+    if (hasValidSession(request) || request.headers.has("authorization")) {
+      return NextResponse.next();
+    }
+    return Response.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  if (request.nextUrl.pathname.startsWith("/api/")) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 });
+  // Pages accept only the session cookie.
+  if (hasValidSession(request)) {
+    return NextResponse.next();
   }
 
   const url = request.nextUrl.clone();
