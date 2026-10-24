@@ -40,7 +40,7 @@ This report records actual results only (PRD §10). Anything not run is marked a
   - a protected API without credentials returned 401;
   - the same API with the bearer access code reached Neon (404 for an unknown experiment);
   - an unauthenticated page returned 307 to `/access`.
-- **Not run yet:** Vercel preview write → redeploy → read (S2) and the S4 runtime checks.
+- **Vercel preview** write → redeploy → read (S2) and the S4 runtime checks: see the next section.
 
 ## S4 / S2 — Vercel preview
 
