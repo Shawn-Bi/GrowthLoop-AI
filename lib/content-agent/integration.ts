@@ -14,9 +14,11 @@ export type RegistryClaim = {
   demo_only: boolean;
 };
 
+
 export type IntegrationDraft = {
   variant_role: "control" | "variant";
   body: string;
+  content_dna: PostVariation["contentDna"];
   claim_ids_used: string[];
   status: "pending_approval";
 };
@@ -55,6 +57,7 @@ export function prepareContentDrafts(
   return posts.map((post) => ({
     variant_role: post.id === "A" ? "control" : "variant",
     body: post.content,
+    content_dna: post.contentDna,
     claim_ids_used: selectedClaims.map(
       (claim) => claim.claim_id
     ),
