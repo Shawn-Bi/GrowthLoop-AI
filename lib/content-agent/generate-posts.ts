@@ -1,9 +1,17 @@
 import { validateBrief, type CampaignBrief } from "./validate-brief";
 
+export type ContentDNA = {
+  messagingAngle: "emotional" | "practical";
+  tone: "empathetic" | "informative";
+  hookType: "audience-first" | "problem-first";
+  callToAction: "question" | "share";
+  testVariable: "messaging_angle";
+};
 export type PostVariation = {
   id: "A" | "B";
   content: string;
   approvalStatus: "pending";
+  contentDna: ContentDNA;
 };
 
 export type ContentStyle = "standard" | "concise" | "detailed";
@@ -60,7 +68,7 @@ export function generatePosts(
 
   if (a === b) throw new Error("A/B drafts must have distinct framing.");
   return [
-    { id: "A", content: a, approvalStatus: "pending" },
-    { id: "B", content: b, approvalStatus: "pending" }
+    { id: "A", content: a, approvalStatus: "pending", contentDna: { messagingAngle: "emotional", tone: "empathetic", hookType: "audience-first", callToAction: options.callToAction ?? "question", testVariable: "messaging_angle" } },   
+ { id: "B", content: b, approvalStatus: "pending", contentDna: { messagingAngle: "practical", tone: "informative", hookType: "problem-first", callToAction: options.callToAction ?? "question", testVariable: "messaging_angle" } }
   ];
 }
