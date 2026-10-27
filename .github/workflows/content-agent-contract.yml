@@ -1,0 +1,20 @@
+name: Content Agent Contract Tests
+on:
+  push:
+    branches:
+      - test/content-agent-ab-contract
+  workflow_dispatch:
+jobs:
+  content-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Compile isolated Content Agent modules
+        run: npx tsc --target es2022 --module commonjs --moduleResolution node --skipLibCheck --esModuleInterop --outDir .content-agent-test-build lib/content-agent/validate-brief.ts lib/content-agent/generate-posts.ts lib/content-agent/revision-loop.ts lib/content-agent/approve-posts.ts
+      - name: Run Content Agent tests
+        run: node --test tests/content-agent.test.cjs tests/content-agent-ab-contract.test.cjs
