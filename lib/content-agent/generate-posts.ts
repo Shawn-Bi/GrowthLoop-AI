@@ -1,3 +1,4 @@
+import { resolveApprovedClaims, type ClaimRegistry } from "./claim-registry";
 import { validateBrief, type CampaignBrief } from "./validate-brief";
 
 export type PostVariation = {
@@ -18,6 +19,8 @@ export type ContentStyle = "standard" | "concise" | "detailed";
 
 export type GenerationOptions = {
   experimentVariable?: ExperimentVariable;
+  claimRegistry?: ClaimRegistry;
+  claimIds?: string[];
   style?: ContentStyle;
   callToAction?: "question" | "share";
 };
@@ -30,7 +33,10 @@ export function generatePosts(
   brief: CampaignBrief,
   options: GenerationOptions = {}
 ): PostVariation[] {
-  const validation = validateBrief(brief);
+  const resolvedBrief = options.claimRegistry !== undefined || options.claimIds !== undefined
+    ? { ...brief, approvedClaims: resolveApprovedClaims(options.claimIds ?? [], options.claimRegistry ?? []) }
+    : brief;
+  const validation = validateBrief(resolvedBrief);
   if (!validation.valid) throw new Error(validation.errors.join(" "));
 
   // Explicit experiments vary exactly one field. Keep the legacy generation path
@@ -43,7 +49,7 @@ export function generatePosts(
       hook: "A stronger future starts with a conversation.",
       pain_point: "Community teams need practical ways to make progress.",
       value_proposition: normalize(brief.keyMessage),
-      evidence: brief.approvedClaims.map(normalize).join("\n"),
+      evidence: resolvedBrief.approvedClaims.map(normalize).join("\n"),
       cta: "What practical step would you prioritize?"
     };
     const variants: Record<ExperimentVariable, [string, string]> = {
@@ -62,7 +68,7 @@ export function generatePosts(
   const audience = normalize(brief.audience);
   const goal = normalize(brief.campaignGoal);
   const message = normalize(brief.keyMessage);
-  const claims = brief.approvedClaims.map(normalize);
+  const claims = resolvedBrief.approvedClaims.map(normalize);
   const style = options.style ?? "standard";
   const question = options.callToAction === "share"
     ? "Share this with someone working toward the same goal."
