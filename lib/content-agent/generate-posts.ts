@@ -6,6 +6,7 @@ export type PostVariation = {
   content: string;
   approvalStatus: "pending";
   experimentVariable?: ExperimentVariable;
+  claimIds?: string[];
   hook?: string;
   pain_point?: string;
   value_proposition?: string;
@@ -61,7 +62,7 @@ export function generatePosts(
     };
     return (["A", "B"] as const).map((id, index) => {
       const fields = { ...common, [variable]: variants[variable][index] };
-      return { id, ...fields, experimentVariable: variable, content: [fields.hook, fields.pain_point, fields.value_proposition, fields.evidence, fields.cta].join("\n\n"), approvalStatus: "pending" as const };
+      return { id, ...fields, claimIds: options.claimIds, experimentVariable: variable, content: [fields.hook, fields.pain_point, fields.value_proposition, fields.evidence, fields.cta].join("\n\n"), approvalStatus: "pending" as const };
     });
   }
 
@@ -101,7 +102,7 @@ export function generatePosts(
 
   if (a === b) throw new Error("A/B drafts must have distinct framing.");
   return [
-    { id: "A", content: a, approvalStatus: "pending" },
-    { id: "B", content: b, approvalStatus: "pending" }
+    { id: "A", content: a, claimIds: options.claimIds, approvalStatus: "pending" },
+    { id: "B", content: b, claimIds: options.claimIds, approvalStatus: "pending" }
   ];
 }
