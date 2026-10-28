@@ -24,6 +24,7 @@ How to analyse:
 How to propose the next experiment:
 - Change exactly one Content DNA dimension. Set primary_test_variable to it and list only that dimension in changed_dimensions.
 - In control_conditions, say what stays the same so the variants remain comparable.
+- Include content_change with baseline_content_id (an input content_id) and variant_value (the exact replacement text for the selected dimension). Preserve all other baseline fields and every approved claim verbatim. Findings and metric IDs justify this change; never place simulated performance claims in draft copy.
 - Give a stop rule that says when to stop collecting observations and review.
 - Do not add, edit or invent product claims; the content team owns claims.
 

@@ -12,6 +12,8 @@ import type { ProposalRecord } from "@/schemas/analytics";
 import type { MetricRecord } from "@/schemas/metrics";
 import { DemoLabels, StatusBadge } from "../labels";
 import {
+  GenerateContentPanel,
+  DraftDecision,
   LoadMetricsPanel,
   ProposalDecision,
   RunAnalysisButton,
@@ -142,12 +144,16 @@ async function ExperimentDetail({
                   <StatusBadge status={draft.status} />
                 </div>
                 <p className="whitespace-pre-wrap text-slate-200">{draft.body}</p>
+                {isOpen && <DraftDecision contentId={draft.content_id} status={draft.status} />}
               </article>
             ))}
           </div>
         )}
       </Section>
 
+      {isOpen && drafts.length === 0 && !experiment.parent_experiment_id && (
+        <Section title="Generate Content"><GenerateContentPanel experimentId={experiment.id} /></Section>
+      )}
       <Section title="Simulated metrics">
         <MetricsTable metrics={metrics} />
         {isOpen && (
@@ -269,6 +275,10 @@ function ProposalCard({ proposal }: { proposal: ProposalRecord }) {
         <p>Change only <code>{analysis.proposal.primary_test_variable}</code>.</p>
         <p>Hold constant: {analysis.proposal.control_conditions.join(" ")}</p>
         <p>Stop rule: {analysis.proposal.stop_rule}</p>
+        {analysis.proposal.content_change && <div>
+          <p>Baseline: <code>{analysis.proposal.content_change.baseline_content_id}</code></p>
+          <p className="whitespace-pre-wrap">Proposed replacement: {analysis.proposal.content_change.variant_value}</p>
+        </div>}
       </div>
 
       {proposal.decided_at && (

@@ -41,10 +41,10 @@ export async function decideDraft(
 
     // Claims can be rejected after a draft was generated, so check again at
     // the moment a human approves.
-    if (input.action === "approve") {
+    if (input.action === "approve" || input.action === "mark_ready") {
       const usable = new Set(await loadUsableClaimIds(tx));
       const unusable = draft.claimIdsUsed.filter((id) => !usable.has(id));
-      if (unusable.length > 0) {
+      if (draft.claimIdsUsed.length === 0 || unusable.length > 0) {
         throw new TransitionError(
           `Draft ${draft.id} uses claims that aren't approved: ${unusable.join(", ")}.`,
           409
@@ -52,6 +52,13 @@ export async function decideDraft(
       }
     }
 
+    if (input.action === "approve" || input.action === "mark_ready") {
+      const claims = await tx.claim.findMany({ where: { id: { in: draft.claimIdsUsed } } });
+      if (claims.some((claim) => !draft.body.includes(claim.text) || (claim.status === "approved_demo_claim" &&
+          (!claim.demoOnly || !draft.body.includes("Hypothetical product — demonstration only"))))) {
+        throw new TransitionError("Draft claim text or demo label no longer matches the registry.", 409);
+      }
+    }
     const updated = await tx.contentDraft.updateMany({
       where: { id: draft.id, status: { in: transition.from } },
       data: {

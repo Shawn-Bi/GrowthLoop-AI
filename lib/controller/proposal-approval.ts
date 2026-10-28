@@ -25,6 +25,11 @@ export function decideProposal(
     );
   }
 
+  if (decision === "approved" && (proposal.errors.length > 0 ||
+      proposal.analysis.proposal.changed_dimensions.length !== 1 ||
+      proposal.analysis.proposal.changed_dimensions[0] !== proposal.analysis.proposal.primary_test_variable)) {
+    throw new TransitionError("Only a valid one-variable proposal can advance.", 409);
+  }
   const decidedAt = now.toISOString();
 
   return {

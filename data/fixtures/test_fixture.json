@@ -1,0 +1,26 @@
+[
+  {
+    "dataset_id": "test_fixture",
+    "experiment_id": "exp_001",
+    "variant_role": "control",
+    "source": "simulated",
+    "impressions": 5000,
+    "link_clicks": 400,
+    "landing_page_visits": 250,
+    "demo_requests": 20,
+    "qualified_demo_requests": 10,
+    "notes": "Integration-test-only illustrative fixture. Pre-authored simulated data; not GL-03 results or evidence of content performance."
+  },
+  {
+    "dataset_id": "test_fixture",
+    "experiment_id": "exp_001",
+    "variant_role": "variant",
+    "source": "simulated",
+    "impressions": 5000,
+    "link_clicks": 380,
+    "landing_page_visits": 240,
+    "demo_requests": 30,
+    "qualified_demo_requests": 18,
+    "notes": "Integration-test-only illustrative fixture. Pre-authored simulated data; not GL-03 results or evidence of content performance."
+  }
+]

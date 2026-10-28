@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { generateContentInTransaction } from "@/lib/controller/content-generation";
 import { buildNextCycleHandoff } from "@/lib/controller/build-handoff";
 import { TransitionError } from "@/lib/controller/errors";
 import { decideProposal } from "@/lib/controller/proposal-approval";
@@ -138,6 +139,11 @@ export async function decideProposalAndAdvance(
         },
       });
 
+      // Integrated drafts carry a validated brief; generate the child pair in this same transaction.
+      const source = await tx.contentDraft.findFirst({ where: { experimentId: parent.id } });
+      if (source && typeof source.contentDna === "object" && source.contentDna !== null && "schema_version" in source.contentDna) {
+        await generateContentInTransaction(tx, handoff.experiment_id);
+      }
       return { proposal, audit, handoff };
     });
   } catch (error) {
