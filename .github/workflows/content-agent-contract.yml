@@ -15,6 +15,6 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Compile isolated Content Agent modules
-        run: npx tsc --target es2022 --module commonjs --moduleResolution node --skipLibCheck --esModuleInterop --outDir .content-agent-test-build lib/content-agent/validate-brief.ts lib/content-agent/generate-posts.ts lib/content-agent/revision-loop.ts lib/content-agent/approve-posts.ts
+        run: npx tsc --target es2022 --module commonjs --moduleResolution node --skipLibCheck --esModuleInterop --outDir .content-agent-test-build lib/content-agent/claim-registry.ts lib/content-agent/validate-brief.ts lib/content-agent/generate-posts.ts lib/content-agent/revision-loop.ts lib/content-agent/approve-posts.ts
       - name: Run Content Agent tests
         run: node --test tests/content-agent.test.cjs tests/content-agent-ab-contract.test.cjs
