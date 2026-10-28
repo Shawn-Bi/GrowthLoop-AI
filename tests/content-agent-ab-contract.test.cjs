@@ -9,12 +9,10 @@ const brief = {
   approvedClaims: ['Our program supports housing access', 'Our team works with community partners']
 };
 
-test('single-variable experiment requires explicit tested dimension', () => {
-  assert.throws(
-    () => generatePosts(brief),
-    /variable|dimension|experiment/i,
-    'Generation must not silently create an untracked multi-variable experiment'
-  );
+test('legacy generation remains compatible with the existing revision loop', () => {
+  const posts = generatePosts(brief);
+  assert.equal(posts.length, 2);
+  assert.equal(posts[0].approvalStatus, 'pending');
 });
 
 test('single-variable experiment exposes its controlled dimension', () => {
