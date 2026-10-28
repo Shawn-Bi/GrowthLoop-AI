@@ -43,19 +43,19 @@ export function generatePosts(
       hook: "A stronger future starts with a conversation.",
       pain_point: "Community teams need practical ways to make progress.",
       value_proposition: normalize(brief.keyMessage),
-      evidence: brief.approvedClaims.map(normalize).join("\\n"),
+      evidence: brief.approvedClaims.map(normalize).join("\n"),
       cta: "What practical step would you prioritize?"
     };
     const variants: Record<ExperimentVariable, [string, string]> = {
       hook: ["Behind every community initiative is a story worth hearing.", "What if the next breakthrough starts with your team?"],
       pain_point: ["Important community work can be hard to coordinate.", "Too many teams struggle to turn good intentions into action."],
       value_proposition: [common.value_proposition, "Together, we can move forward: " + common.value_proposition],
-      evidence: [common.evidence, "Approved information:\\n" + common.evidence],
+      evidence: [common.evidence, "Approved information:\n" + common.evidence],
       cta: ["What practical step would you prioritize?", "Which action would you take first?"]
     };
     return (["A", "B"] as const).map((id, index) => {
       const fields = { ...common, [variable]: variants[variable][index] };
-      return { id, ...fields, experimentVariable: variable, content: [fields.hook, fields.pain_point, fields.value_proposition, fields.evidence, fields.cta].join("\\n\\n"), approvalStatus: "pending" as const };
+      return { id, ...fields, experimentVariable: variable, content: [fields.hook, fields.pain_point, fields.value_proposition, fields.evidence, fields.cta].join("\n\n"), approvalStatus: "pending" as const };
     });
   }
 
