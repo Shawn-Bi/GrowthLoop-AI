@@ -1,0 +1,88 @@
+{
+  "dataset_id": "demo_fixture_v1",
+  "source": "simulated",
+  "purpose": "GL-03 independent hand-calculated expectations; not observed campaign results",
+  "experiment_id": "exp_001",
+  "valid_rows": [
+    {
+      "variant_role": "control",
+      "numerator_qualified_demo_requests": 8,
+      "primary_denominator_landing_page_visits": 80,
+      "primary_kpi": {
+        "metric": "qualified_demo_rate_per_visit",
+        "status": "calculated",
+        "value": 0.1,
+        "percent": 10.0,
+        "calculation": "8 / 80 = 0.10 = 10%"
+      },
+      "secondary_denominator_link_clicks": 100,
+      "secondary_kpi": {
+        "metric": "qualified_demo_rate_per_click",
+        "status": "calculated",
+        "value": 0.08,
+        "percent": 8.0,
+        "calculation": "8 / 100 = 0.08 = 8%"
+      }
+    },
+    {
+      "variant_role": "variant",
+      "numerator_qualified_demo_requests": 15,
+      "primary_denominator_landing_page_visits": 100,
+      "primary_kpi": {
+        "metric": "qualified_demo_rate_per_visit",
+        "status": "calculated",
+        "value": 0.15,
+        "percent": 15.0,
+        "calculation": "15 / 100 = 0.15 = 15%"
+      },
+      "secondary_denominator_link_clicks": 120,
+      "secondary_kpi": {
+        "metric": "qualified_demo_rate_per_click",
+        "status": "calculated",
+        "value": 0.125,
+        "percent": 12.5,
+        "calculation": "15 / 120 = 0.125 = 12.5%"
+      }
+    }
+  ],
+  "comparison": {
+    "primary_absolute_percentage_point_difference": 5.0,
+    "secondary_absolute_percentage_point_difference": 4.5,
+    "interpretation": "Differences are synthetic and must not be presented as real campaign lift or causal evidence."
+  },
+  "invalid_rows": [
+    {
+      "index_zero_based": 2,
+      "variant_role": "control",
+      "expected": "quarantined",
+      "reason": "qualified_demo_requests (13) exceeds demo_requests (12)"
+    },
+    {
+      "index_zero_based": 3,
+      "variant_role": "variant",
+      "expected": "quarantined",
+      "reason": "landing_page_visits (130) exceeds link_clicks (120)"
+    }
+  ],
+  "expected_ingestion": {
+    "accepted_row_count": 2,
+    "quarantined_row_count": 2
+  },
+  "zero_denominator_unit_case": {
+    "scope": "Separate KPI unit case; not a fixture row and not an exp_001 ingestion record",
+    "qualified_demo_requests": 0,
+    "landing_page_visits": 0,
+    "link_clicks": 0,
+    "primary_kpi": {
+      "status": "not_calculable",
+      "value": null,
+      "reason": "zero denominator"
+    },
+    "secondary_kpi": {
+      "status": "not_calculable",
+      "value": null,
+      "reason": "zero denominator"
+    },
+    "note": "All-zero counts satisfy the funnel relationship. A separate valid fixture row would require a distinct experiment/role with matching draft to avoid duplicate-row quarantine."
+  }
+}
