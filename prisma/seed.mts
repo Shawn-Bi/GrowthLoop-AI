@@ -23,7 +23,9 @@ try {
   const result = await seedClaimRegistry(db, registry);
   console.log(
     `Seeded claim registry ${result.registry_version} from ${file}: ${result.upserted} claims` +
-      (result.removed.length > 0 ? `, removed ${result.removed.join(", ")}` : "")
+      (result.retired.length > 0
+        ? `, marked rejected_claim (no longer in the file): ${result.retired.join(", ")}`
+        : "")
   );
 } finally {
   await db.$disconnect();
