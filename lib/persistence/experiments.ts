@@ -3,6 +3,7 @@ import { generateContentInTransaction } from "@/lib/controller/content-generatio
 import { buildNextCycleHandoff } from "@/lib/controller/build-handoff";
 import { TransitionError } from "@/lib/controller/errors";
 import { decideProposal } from "@/lib/controller/proposal-approval";
+import { assertProposalStillValid } from "@/lib/controller/proposal-revalidation";
 import type { ProposalRecord, TestVariable } from "@/schemas/analytics";
 import type { AuditEvent, Decision, ReviewerRole } from "@/schemas/audit";
 import { handoffSchema, type Handoff } from "@/schemas/handoff";
@@ -66,6 +67,9 @@ export async function decideProposalAndAdvance(
 
       if (proposal.status === "approved" && !input.next) {
         throw new Error("Approving a proposal requires the next cycle's IDs.");
+      }
+      if (proposal.status === "approved") {
+        await assertProposalStillValid(tx, proposal);
       }
 
       // Conditional update: a concurrent decision leaves nothing to match.
