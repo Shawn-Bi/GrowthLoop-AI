@@ -1,0 +1,186 @@
+// GrowthLoop AI data model (PRD §8). Agents never touch the database; only
+// the controller reads and writes these records.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum VariantRole {
+  control
+  variant
+}
+
+enum ClaimStatus {
+  approved_demo_claim
+  verified_claim
+  rejected_claim
+}
+
+enum ExperimentStatus {
+  open
+  closed
+}
+
+enum DraftStatus {
+  draft
+  needs_review
+  pending_approval
+  approved
+  rejected
+  ready_for_manual_publication
+}
+
+enum ProposalStatus {
+  needs_human_approval
+  approved
+  rejected
+  error
+}
+
+enum AgentRunStatus {
+  started
+  completed
+  error
+}
+
+enum ReviewerRole {
+  content_reviewer
+  experiment_approver
+}
+
+model Claim {
+  id               String      @id
+  registryVersion  String
+  text             String
+  status           ClaimStatus
+  sourceOrEvidence String
+  reviewer         String
+  reviewedAt       DateTime
+  demoOnly         Boolean
+}
+
+model Experiment {
+  id                  String           @id
+  correlationId       String
+  cycle               Int
+  // Unique, so approving the same parent twice can't create two children.
+  parentExperimentId  String?          @unique
+  parent              Experiment?      @relation("ExperimentLineage", fields: [parentExperimentId], references: [id])
+  child               Experiment?      @relation("ExperimentLineage")
+  hypothesis          String?
+  primaryTestVariable String?
+  status              ExperimentStatus @default(open)
+  createdAt           DateTime         @default(now())
+  drafts              ContentDraft[]
+  metrics             MetricRecord[]
+  proposals           AnalysisReport[]
+  agentRuns           AgentRun[]
+  handoff             Handoff?
+}
+
+model ContentDraft {
+  id            String        @id
+  experimentId  String
+  experiment    Experiment    @relation(fields: [experimentId], references: [id])
+  variantRole   VariantRole
+  body          String
+  contentDna    Json
+  claimIdsUsed  String[]
+  status        DraftStatus   @default(draft)
+  reviewFlags   String[]
+  decidedByRole ReviewerRole?
+  decidedAt     DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@unique([experimentId, variantRole])
+}
+
+// The full metric contract (schemas/metrics.ts) lives in `record`; the
+// columns are for lookups and the trace view.
+model MetricRecord {
+  id           String      @id
+  experimentId String
+  experiment   Experiment  @relation(fields: [experimentId], references: [id])
+  contentId    String
+  datasetId    String
+  variantRole  VariantRole
+  metric       String
+  source       String
+  record       Json
+  createdAt    DateTime    @default(now())
+
+  @@index([experimentId])
+}
+
+// Analytics Agent output plus its review and approval state.
+model AnalysisReport {
+  id            String         @id
+  experimentId  String
+  experiment    Experiment     @relation(fields: [experimentId], references: [id])
+  analysis      Json
+  status        ProposalStatus
+  errors        String[]
+  reviewFlags   String[]
+  decidedByRole ReviewerRole?
+  decidedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  handoff       Handoff?
+
+  @@index([experimentId])
+}
+
+model AgentRun {
+  id           String         @id @default(cuid())
+  agent        String
+  experimentId String?
+  experiment   Experiment?    @relation(fields: [experimentId], references: [id])
+  model        String
+  status       AgentRunStatus
+  attempts     Int
+  inputTokens  Int
+  outputTokens Int
+  latencyMs    Int
+  stopReason   String?
+  error        String?
+  createdAt    DateTime       @default(now())
+}
+
+// The controller → Content Agent handoff that started an experiment.
+model Handoff {
+  idempotencyKey     String         @id
+  experimentId       String         @unique
+  experiment         Experiment     @relation(fields: [experimentId], references: [id])
+  parentExperimentId String
+  proposalId         String         @unique
+  proposal           AnalysisReport @relation(fields: [proposalId], references: [id])
+  payload            Json
+  createdAt          DateTime       @default(now())
+}
+
+model AuditEvent {
+  id           String       @id @default(cuid())
+  eventType    String
+  recordType   String
+  recordId     String
+  decision     String
+  reviewerRole ReviewerRole
+  fromStatus   String
+  toStatus     String
+  occurredAt   DateTime
+
+  @@index([recordId])
+}
+
+// Successful agent generations per UTC day, capped server-side (PRD fixed
+// operating policy). Mapped to snake_case for the raw atomic update.
+model DailyGenerationQuota {
+  day             String @id
+  successfulCalls Int    @map("successful_calls")
+
+  @@map("daily_generation_quota")
+}
