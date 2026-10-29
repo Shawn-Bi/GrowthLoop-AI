@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { PrismaPGlite } from "pglite-prisma-adapter";
+import { afterAll, beforeAll, beforeEach } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 
 const migrationsDir = new URL("../../prisma/migrations/", import.meta.url);
@@ -38,6 +39,38 @@ export async function createTestDb(dataDir?: string): Promise<TestDb> {
   }
 
   return openClient(pg);
+}
+
+async function truncateAll(pg: PGlite): Promise<void> {
+  const { rows } = await pg.query<{ tables: string | null }>(
+    "SELECT string_agg(format('%I', tablename), ', ') AS tables FROM pg_tables WHERE schemaname = 'public'"
+  );
+  if (rows[0].tables) {
+    await pg.exec(`TRUNCATE ${rows[0].tables} CASCADE`);
+  }
+}
+
+// One migrated database per test file, emptied before each test. Starting
+// PGlite once per file keeps the suite fast when files run in parallel.
+export function setupTestDb(): () => TestDb {
+  let testDb: TestDb | undefined;
+
+  beforeAll(async () => {
+    testDb = await createTestDb();
+  });
+  beforeEach(async () => {
+    await truncateAll(testDb!.pg);
+  });
+  afterAll(async () => {
+    await testDb?.close();
+  });
+
+  return () => {
+    if (!testDb) {
+      throw new Error("The test database is not ready.");
+    }
+    return testDb;
+  };
 }
 
 export function openClient(pg: PGlite): TestDb {

@@ -12,5 +12,7 @@ export default defineConfig({
   test: {
     include: ["smoke/**/*.smoke.ts"],
     testTimeout: 180_000,
+    // Smoke checks exist to print evidence, so show logs from passing tests.
+    silent: false,
   },
 });

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { buildNextCycleHandoff } from "@/lib/controller/build-handoff";
 import { TransitionError } from "@/lib/controller/errors";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@/lib/persistence/experiments";
 import { loadProposal, saveProposal } from "@/lib/persistence/proposals";
 import { pendingProposal } from "../analytics/fixtures";
-import { createTestDb, type TestDb } from "./db";
+import { createTestDb, setupTestDb, type TestDb } from "./db";
 import { approveInput, seedCycle1 } from "./seed";
 
 async function expectTransition(promise: Promise<unknown>, status: number) {
@@ -23,15 +23,12 @@ async function expectTransition(promise: Promise<unknown>, status: number) {
   expect((error as TransitionError).httpStatus).toBe(status);
 }
 
+const getTestDb = setupTestDb();
 let testDb: TestDb;
 
 beforeEach(async () => {
-  testDb = await createTestDb();
+  testDb = getTestDb();
   await seedCycle1(testDb.db);
-});
-
-afterEach(async () => {
-  await testDb.close();
 });
 
 describe("decideProposalAndAdvance", () => {

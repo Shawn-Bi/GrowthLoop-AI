@@ -53,6 +53,10 @@ describe("S1 Anthropic smoke", () => {
       console.log(
         `Proposal status: ${proposal.status}; review flags: ${proposal.review_flags.length}; errors: ${proposal.errors.length}`
       );
+      for (const message of [...proposal.errors, ...proposal.review_flags]) {
+        console.log(`- ${message}`);
+      }
+      console.log(`Primary test variable: ${result.output.proposal.primary_test_variable}`);
       expect(proposal.status).not.toBe("error");
     }
   });

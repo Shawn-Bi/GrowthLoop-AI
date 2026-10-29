@@ -1,23 +1,20 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   DAILY_GENERATION_LIMIT,
   QuotaExceededError,
   releaseGenerationSlot,
   reserveGenerationSlot,
 } from "@/lib/persistence/quota";
-import { createTestDb, type TestDb } from "./db";
+import { setupTestDb, type TestDb } from "./db";
 
 const day1 = new Date("2026-10-23T23:59:00.000Z");
 const day2 = new Date("2026-10-24T00:01:00.000Z");
 
+const getTestDb = setupTestDb();
 let testDb: TestDb;
 
-beforeEach(async () => {
-  testDb = await createTestDb();
-});
-
-afterEach(async () => {
-  await testDb.close();
+beforeEach(() => {
+  testDb = getTestDb();
 });
 
 describe("daily generation quota", () => {
