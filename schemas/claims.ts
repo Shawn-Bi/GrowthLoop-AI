@@ -10,13 +10,17 @@ export const claimStatusSchema = z.enum([
 ]);
 export type ClaimStatus = z.infer<typeof claimStatusSchema>;
 
+// Required text must have real content: surrounding spaces are trimmed, so a
+// whitespace-only value is rejected (PR #11 review).
+const requiredText = z.string().trim().min(1);
+
 export const claimSchema = z
   .object({
-    claim_id: z.string().min(1),
-    text: z.string().min(1),
+    claim_id: requiredText,
+    text: requiredText,
     status: claimStatusSchema,
-    source_or_evidence: z.string().min(1),
-    reviewer: z.string().min(1),
+    source_or_evidence: requiredText,
+    reviewer: requiredText,
     reviewed_at: z.union([z.iso.datetime({ offset: true }), z.iso.date()]),
     demo_only: z.boolean(),
   })
@@ -35,7 +39,7 @@ export type Claim = z.infer<typeof claimSchema>;
 // mirrors this file.
 export const claimRegistrySchema = z
   .object({
-    registry_version: z.string().min(1),
+    registry_version: requiredText,
     claims: z.array(claimSchema).min(1),
   })
   .superRefine((registry, ctx) => {
