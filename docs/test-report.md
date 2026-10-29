@@ -2,7 +2,7 @@
 
 This report records actual results only (PRD §10). Anything not run is marked as such.
 
-**Last updated:** 2026-10-29, on branch `feature/cycle2-baseline-limit`. This branch stacks the integrated Content loop (#14), handoff v1.1 (#16) and the outcome/cycle-limit rules on top of #3–#12. Node 24.15.0, Windows. Sections S2–S5 are from the 2026-10-23 runs and weren't repeated.
+**Last updated:** 2026-10-29, on branch `feature/cycle2-baseline-limit`. This branch stacks the integrated Content loop (#14), handoff v1.1 (#16) and the outcome/cycle-limit rules on top of #3–#12. Node 24.15.0, Windows. S2 and S4 were re-run on this branch's preview on 2026-10-29 (see the end of the Vercel section). S3 and S5 are from the 2026-10-23 runs.
 
 ## Summary
 
@@ -59,6 +59,15 @@ This report records actual results only (PRD §10). Anything not run is marked a
 - **S2 write through the deployment:** seeding `exp_smoke_001`, loading metrics, analysing and approving created `exp_smoke_002` and its handoff in Neon through the deployed app.
 - **S2 read after a redeploy:** pushing `3ff27e1` produced a new deployment, `BCdwk…`; the write had run on `BARus…`. The redeployed app returned `exp_smoke_002`, its parent link and its handoff (200), and the trace `exp_smoke_001 → exp_smoke_002`.
 - **Cleanup:** `smoke:deploy:cleanup` removed the `exp_smoke_*` rows, and the preview now returns 404 for them. The run used one of the day's 30 generation slots.
+- **Re-run on 2026-10-29** against the `feature/cycle2-baseline-limit` preview (#17, commit `97afaa2`):
+  - **Migration:** Neon was migrated first with `npm run db:migrate`. `prisma migrate status` reports 2 migrations and "Database schema is up to date".
+  - **S4:** `/api/health` returned 200. `/api/experiments/*` without the access code returned the app's own 401, and `/experiments` returned 307.
+  - **S2 write:** metrics returned 201. The real-Claude analysis returned 201 in 17.0 s, with 0 review flags. The decision with `outcome: "inconclusive"` returned 200 and created `exp_smoke_002`.
+  - **Neon read-back:**
+    - The proposal is `approved` with outcome `inconclusive`, and the audit event has the same outcome.
+    - The stored handoff is `schema_version: "1.1"`, with baseline `cnt_smoke_control`, so the inconclusive result kept the control.
+  - **S2 read:** `GET /api/experiments/exp_smoke_002` returned 200, and the trace returned 200. This was not after a redeploy; the 2026-10-23 run covers persistence across a redeploy.
+  - **Cleanup:** `smoke:deploy:cleanup` removed the `exp_smoke_*` rows.
 
 ## S3 / S5 — Secrets and access
 
@@ -73,4 +82,3 @@ This report records actual results only (PRD §10). Anything not run is marked a
 - **Two-cycle E2E with real Content Agent drafts and real Claude, on the Vercel preview (GL-10/GL-11).** The same flow passes in `tests/integration/*` over the production API handlers with PGlite, but there the Anthropic transport is stubbed.
 - **KPI exact match against Michelle's `expected.json` (GL-03/GL-08).** Her #15 test passed 38/38 against the #4 KPI code in a local check on 2026-10-29. It's recorded here once #15 is merged into #4.
 - **A production deployment of this stack.** `main` has #3 only; the rest reaches it as #4–#12 merge.
-- **Neon migration `20261029000000_proposal_outcome`.** It has to be applied with `npm run db:migrate` before a preview of this branch can decide proposals.
