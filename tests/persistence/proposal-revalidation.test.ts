@@ -22,11 +22,11 @@ async function editStoredAnalysis(edit: (analysis: AnalyticsOutput) => void) {
   await testDb.db.analysisReport.update({ where: { id: "prop_001" }, data: { analysis: analysis as object } });
 }
 
-async function expectRefusedAndNothingWritten(message: string) {
+async function expectRefusedAndNothingWritten(message: string | RegExp) {
   const error = await decideProposalAndAdvance(testDb.db, approveInput).then(() => null, (caught: unknown) => caught);
   expect(error).toBeInstanceOf(TransitionError);
   expect((error as TransitionError).httpStatus).toBe(409);
-  expect((error as TransitionError).message).toContain(message);
+  expect((error as TransitionError).message).toMatch(message);
   expect(await testDb.db.experiment.count()).toBe(1);
   expect(await testDb.db.handoff.count()).toBe(0);
   expect(await testDb.db.auditEvent.count()).toBe(0);
@@ -42,7 +42,8 @@ it("refuses to approve a stored proposal edited to cite an unknown metric ID", a
 it("refuses to approve a stored proposal edited to change two variables", async () => {
   await editStoredAnalysis((analysis) => { analysis.proposal.changed_dimensions = ["hook", "cta"]; });
 
-  await expectRefusedAndNothingWritten("One-variable test required");
+  // Later PRs (#14) also refuse this in decideProposal, with its own wording.
+  await expectRefusedAndNothingWritten(/one-variable/i);
 });
 
 it("refuses to approve a stored proposal citing another experiment's metrics", async () => {
