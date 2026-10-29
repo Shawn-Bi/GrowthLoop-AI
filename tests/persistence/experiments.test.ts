@@ -81,7 +81,7 @@ describe("decideProposalAndAdvance", () => {
         sourceContentIds: ["cnt_001", "cnt_002"],
         approvedClaimIds: ["clm_001"],
         nextExperimentId: "exp_002",
-        taskId: "task_002",
+        taskId: "task_exp_002",
         correlationId: "corr_001",
       })
     );
@@ -211,10 +211,11 @@ describe("experiment memory", () => {
       proposals: [{ proposal_id: "prop_001", status: "approved" }],
     });
     expect(trace[0].metric_ids).toHaveLength(14);
+    // Approval generated the Cycle 2 pair in the same transaction.
     expect(trace[1]).toMatchObject({
       cycle: 2,
       parent_experiment_id: "exp_001",
-      content_ids: [],
+      content_ids: ["cnt_exp_002_control", "cnt_exp_002_variant"],
     });
   });
 });

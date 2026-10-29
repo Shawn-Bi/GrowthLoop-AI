@@ -5,15 +5,32 @@ import { saveMetricRecords } from "@/lib/persistence/metrics";
 import { saveProposal } from "@/lib/persistence/proposals";
 import { metrics, validOutput } from "../analytics/fixtures";
 import { drafts } from "../kpi/fixtures";
+import { validDna } from "./dna";
 
-// Cycle 1 up to a proposal awaiting approval: exp_001, cnt_001/cnt_002,
-// their metrics and prop_001.
+// The test-only claim the seeded drafts use (not Michelle's GrantReady copy).
+export const SEED_CLAIM_TEXT = "GrantReady is a hypothetical product.";
+
+// Cycle 1 up to a proposal awaiting approval: exp_001, cnt_001/cnt_002 with
+// valid Content DNA, the claim they use, their metrics and prop_001.
+// Approving prop_001 generates the real Cycle 2 pair from cnt_001.
 export async function seedCycle1(db: PrismaClient): Promise<void> {
   await createRootExperiment(db, {
     id: "exp_001",
     correlationId: "corr_001",
     hypothesis: "A question hook earns more qualified demo requests.",
     primaryTestVariable: "hook",
+  });
+  await db.claim.create({
+    data: {
+      id: "clm_001",
+      registryVersion: "v1",
+      text: SEED_CLAIM_TEXT,
+      status: "approved_demo_claim",
+      sourceOrEvidence: "Test-only demo claim",
+      reviewer: "Michelle",
+      reviewedAt: new Date("2026-10-21"),
+      demoOnly: true,
+    },
   });
 
   for (const draft of drafts) {
@@ -23,7 +40,13 @@ export async function seedCycle1(db: PrismaClient): Promise<void> {
         experimentId: draft.experiment_id,
         variantRole: draft.variant_role,
         body: `Test ${draft.variant_role} post`,
-        contentDna: { hook: draft.variant_role },
+        contentDna: validDna({
+          variant_role: draft.variant_role,
+          claim_ids_used: ["clm_001"],
+          hook: `Test ${draft.variant_role} hook`,
+          evidence: SEED_CLAIM_TEXT,
+          generation_context: { ...validDna().generation_context, correlation_id: "corr_001" },
+        }),
         claimIdsUsed: ["clm_001"],
         status: "approved",
       },
@@ -44,7 +67,7 @@ export const approveInput = {
   now: new Date("2026-10-23T15:00:00.000Z"),
   next: {
     experimentId: "exp_002",
-    taskId: "task_002",
+    taskId: "task_exp_002",
     approvedClaimIds: ["clm_001"],
   },
 };
