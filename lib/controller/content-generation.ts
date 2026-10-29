@@ -54,7 +54,14 @@ export async function generateContentInTransaction(db: Db, experimentId: string,
     if (!source || source.experimentId !== experiment.parentExperimentId || !["approved", "ready_for_manual_publication"].includes(source.status)) {
       throw new TransitionError("Baseline draft is not approved.", 409);
     }
-    baseline = contentDnaSchema.parse(source.contentDna);
+    // A clear 409 rather than a schema exception, which would surface as a 500
+    // when approval generates the next pair in the same transaction.
+    const parsedBaseline = contentDnaSchema.safeParse(source.contentDna);
+    if (!parsedBaseline.success) {
+      const fields = [...new Set(parsedBaseline.error.issues.map((issue) => issue.path.join(".") || "(whole record)"))];
+      throw new TransitionError(`Baseline draft ${source.id} has invalid Content DNA (${fields.join(", ")}).`, 409);
+    }
+    baseline = parsedBaseline.data;
     brief = baseline.brief;
     const metrics = await db.metricRecord.findMany({ where: { experimentId: experiment.parentExperimentId, id: { in: handoff.metric_ids } } });
     if (metrics.length !== new Set(handoff.metric_ids).size || handoff.findings.some((f) => f.metric_ids.some((id) => !handoff.metric_ids.includes(id)))) {
