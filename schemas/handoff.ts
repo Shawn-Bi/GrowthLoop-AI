@@ -1,13 +1,16 @@
 import { z } from "zod";
-import { findingSchema, testVariableSchema } from "./analytics";
+import { contentChangeSchema, findingSchema, testVariableSchema } from "./analytics";
 
 const id = z.string().min(1);
 
-// Versioned controller → Content Agent handoff (PRD §7, v1.0). Cycle 1 has no
-// parent; every later cycle must carry the parent experiment's evidence.
+// Versioned controller → Content Agent handoff (PRD §7). Cycle 1 has no
+// parent; every later cycle must carry the parent experiment's evidence and
+// the approved content change. v1.1 (agreed on PR #13) makes content_change
+// required from Cycle 2; both the controller and the Content Agent parse
+// with this schema, so a v1.0 payload is rejected at either end.
 export const handoffSchema = z
   .object({
-    schema_version: z.literal("1.0"),
+    schema_version: z.literal("1.1"),
     task_id: id,
     correlation_id: id,
     idempotency_key: id,
@@ -16,7 +19,7 @@ export const handoffSchema = z
     source_content_ids: z.array(id),
     approved_claim_ids: z.array(id),
     hypothesis: z.string().min(1),
-    content_change: z.object({ baseline_content_id: id, variant_value: z.string().trim().min(1).max(4000) }).optional(),
+    content_change: contentChangeSchema.optional(),
     primary_test_variable: testVariableSchema,
     control_conditions: z.array(z.string().min(1)).min(1),
     metric_ids: z.array(id),
@@ -42,6 +45,20 @@ export const handoffSchema = z
           message: "Required when parent_experiment_id is set.",
         });
       }
+    }
+
+    if (!handoff.content_change) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["content_change"],
+        message: "Required when parent_experiment_id is set.",
+      });
+    } else if (!handoff.source_content_ids.includes(handoff.content_change.baseline_content_id)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["content_change", "baseline_content_id"],
+        message: "Must be one of source_content_ids.",
+      });
     }
 
     if (handoff.parent_experiment_id === handoff.experiment_id) {

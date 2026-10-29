@@ -30,7 +30,8 @@ describe("buildNextCycleHandoff", () => {
     const handoff = buildNextCycleHandoff(input);
 
     expect(handoff).toMatchObject({
-      schema_version: "1.0",
+      schema_version: "1.1",
+      content_change: approved.analysis.proposal.content_change,
       experiment_id: "exp_002",
       parent_experiment_id: "exp_001",
       source_content_ids: ["cnt_001", "cnt_002"],
@@ -45,9 +46,11 @@ describe("buildNextCycleHandoff", () => {
   });
 
   it("chains beyond cycle 2 for a continuing loop", () => {
+    const analysis = structuredClone(approved.analysis);
+    analysis.proposal.content_change.baseline_content_id = "cnt_003";
     const cycle3 = buildNextCycleHandoff({
       ...input,
-      proposal: { ...approved, proposal_id: "prop_002", experiment_id: "exp_002" },
+      proposal: { ...approved, proposal_id: "prop_002", experiment_id: "exp_002", analysis },
       sourceContentIds: ["cnt_003", "cnt_004"],
       nextExperimentId: "exp_003",
     });
@@ -94,10 +97,29 @@ describe("handoffSchema", () => {
     expect(handoffSchema.safeParse(missing).success).toBe(false);
   });
 
-  it("rejects an unsupported schema version", () => {
+  it.each(["1.0", "2.0"])("rejects schema version %s", (schema_version) => {
     expect(
-      handoffSchema.safeParse({ ...valid, schema_version: "2.0" }).success
+      handoffSchema.safeParse({ ...valid, schema_version }).success
     ).toBe(false);
+  });
+
+  it("requires content_change once a parent is set", () => {
+    const missing: Record<string, unknown> = { ...valid };
+    delete missing.content_change;
+
+    const result = handoffSchema.safeParse(missing);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].path).toEqual(["content_change"]);
+  });
+
+  it("requires the baseline to be one of the source drafts", () => {
+    const result = handoffSchema.safeParse({
+      ...valid,
+      content_change: { ...valid.content_change!, baseline_content_id: "cnt_999" },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].path).toEqual(["content_change", "baseline_content_id"]);
   });
 
   it("allows a cycle 1 handoff without parent evidence", () => {

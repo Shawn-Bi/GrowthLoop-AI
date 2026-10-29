@@ -30,8 +30,17 @@ export function buildNextCycleHandoff(input: NextCycleInput): Handoff {
   const { analysis } = proposal;
   const findingMetricIds = analysis.findings.flatMap((f) => f.metric_ids);
 
+  // The Agent picks the baseline from the drafts it analysed; anything else
+  // can't be turned into a valid next-cycle pair.
+  if (!input.sourceContentIds.includes(analysis.proposal.content_change.baseline_content_id)) {
+    throw new TransitionError(
+      `Proposal ${proposal.proposal_id} uses baseline ${analysis.proposal.content_change.baseline_content_id}, which isn't one of the analysed drafts.`,
+      409
+    );
+  }
+
   return handoffSchema.parse({
-    schema_version: "1.0",
+    schema_version: "1.1",
     task_id: input.taskId,
     correlation_id: input.correlationId,
     // One handoff per approved proposal, so a retried request reuses the key
@@ -42,7 +51,7 @@ export function buildNextCycleHandoff(input: NextCycleInput): Handoff {
     source_content_ids: input.sourceContentIds,
     approved_claim_ids: input.approvedClaimIds,
     hypothesis: analysis.proposal.hypothesis,
-    ...(analysis.proposal.content_change ? { content_change: analysis.proposal.content_change } : {}),
+    content_change: analysis.proposal.content_change,
     primary_test_variable: analysis.proposal.primary_test_variable,
     control_conditions: analysis.proposal.control_conditions,
     metric_ids: [

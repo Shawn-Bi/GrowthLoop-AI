@@ -68,7 +68,7 @@ export async function generateContentInTransaction(db: Db, experimentId: string,
     const result = contentRequestSchema.safeParse(request);
     if (!result.success) throw new ControllerError("A valid brief and approved claim IDs are required.", 400);
     brief = result.data.brief;
-    const parsed = handoffSchema.safeParse({ schema_version: "1.0", task_id: `task_${experimentId}`,
+    const parsed = handoffSchema.safeParse({ schema_version: "1.1", task_id: `task_${experimentId}`,
       correlation_id: experiment.correlationId, idempotency_key: `content:${experimentId}`, experiment_id: experimentId,
       parent_experiment_id: null, source_content_ids: [], approved_claim_ids: result.data.approved_claim_ids,
       hypothesis: experiment.hypothesis, primary_test_variable: experiment.primaryTestVariable,
