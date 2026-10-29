@@ -8,11 +8,14 @@ import {
 export type SeedResult = {
   registry_version: string;
   upserted: number;
-  removed: string[];
+  // Claims no longer in the file, now marked rejected_claim.
+  retired: string[];
 };
 
-// Makes the Claim table mirror the registry file in one transaction:
-// every claim is upserted and claims no longer in the file are removed.
+// Loads the registry file in one transaction: every claim in it is
+// upserted, and claims no longer in it are kept but marked rejected_claim.
+// Drafts store claim IDs, so keeping the row keeps the claim's text and
+// evidence in the audit trail while blocking it from new content.
 export async function seedClaimRegistry(
   db: PrismaClient,
   input: unknown
@@ -42,12 +45,15 @@ export async function seedClaimRegistry(
       where: { id: { notIn: ids } },
       select: { id: true },
     });
-    await tx.claim.deleteMany({ where: { id: { notIn: ids } } });
+    await tx.claim.updateMany({
+      where: { id: { notIn: ids } },
+      data: { status: "rejected_claim" },
+    });
 
     return {
       registry_version: registry.registry_version,
       upserted: registry.claims.length,
-      removed: stale.map((claim) => claim.id),
+      retired: stale.map((claim) => claim.id),
     };
   });
 }

@@ -87,7 +87,7 @@ describe("seedClaimRegistry", () => {
   it("loads every claim with its registry version", async () => {
     const result = await seedClaimRegistry(testDb.db, registry());
 
-    expect(result).toEqual({ registry_version: "v1", upserted: 3, removed: [] });
+    expect(result).toEqual({ registry_version: "v1", upserted: 3, retired: [] });
     expect(await testDb.db.claim.findUniqueOrThrow({ where: { id: "clm_001" } }))
       .toMatchObject({
         registryVersion: "v1",
@@ -97,7 +97,7 @@ describe("seedClaimRegistry", () => {
       });
   });
 
-  it("mirrors the file when re-seeded: updates claims and removes dropped ones", async () => {
+  it("updates claims when re-seeded and keeps dropped ones as rejected_claim", async () => {
     await seedClaimRegistry(testDb.db, registry());
     const next = registry();
     next.registry_version = "v2";
@@ -106,10 +106,35 @@ describe("seedClaimRegistry", () => {
 
     const result = await seedClaimRegistry(testDb.db, next);
 
-    expect(result).toEqual({ registry_version: "v2", upserted: 2, removed: ["clm_002"] });
-    expect(await testDb.db.claim.count()).toBe(2);
+    expect(result).toEqual({ registry_version: "v2", upserted: 2, retired: ["clm_002"] });
+    expect(await testDb.db.claim.count()).toBe(3);
     expect(await testDb.db.claim.findUniqueOrThrow({ where: { id: "clm_001" } }))
       .toMatchObject({ registryVersion: "v2", text: "Verified claim A, reworded" });
+    // The history stays readable: same text, evidence, reviewer and the last
+    // registry version that contained it.
+    expect(await testDb.db.claim.findUniqueOrThrow({ where: { id: "clm_002" } }))
+      .toMatchObject({
+        registryVersion: "v1",
+        text: "Demo claim B",
+        sourceOrEvidence: "Hypothetical demo positioning",
+        reviewer: "Michelle",
+        status: "rejected_claim",
+      });
+    expect(await loadUsableClaimIds(testDb.db)).toEqual(["clm_001"]);
+  });
+
+  it("restores a retired claim when it returns to the file", async () => {
+    await seedClaimRegistry(testDb.db, registry());
+    const without = registry();
+    without.claims = without.claims.filter((claim) => claim.claim_id !== "clm_002");
+    await seedClaimRegistry(testDb.db, without);
+
+    const result = await seedClaimRegistry(testDb.db, { ...registry(), registry_version: "v3" });
+
+    expect(result.retired).toEqual([]);
+    expect(await testDb.db.claim.findUniqueOrThrow({ where: { id: "clm_002" } }))
+      .toMatchObject({ registryVersion: "v3", status: "approved_demo_claim" });
+    expect(await loadUsableClaimIds(testDb.db)).toEqual(["clm_001", "clm_002"]);
   });
 
   it("writes nothing when the registry is invalid", async () => {
