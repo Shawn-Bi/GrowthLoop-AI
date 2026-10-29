@@ -1,11 +1,18 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { generateContentInTransaction } from "@/lib/controller/content-generation";
 import { buildNextCycleHandoff } from "@/lib/controller/build-handoff";
+import {
+  assertCanStartNextCycle,
+  assertOutcomeAllowed,
+  chooseBaseline,
+  primaryKpiCalculable,
+} from "@/lib/controller/cycle-rules";
 import { TransitionError } from "@/lib/controller/errors";
 import { decideProposal } from "@/lib/controller/proposal-approval";
 import type { ProposalRecord, TestVariable } from "@/schemas/analytics";
-import type { AuditEvent, Decision, ReviewerRole } from "@/schemas/audit";
+import type { AuditEvent, Decision, ProposalOutcome, ReviewerRole } from "@/schemas/audit";
 import { handoffSchema, type Handoff } from "@/schemas/handoff";
+import { loadMetricRecords } from "./metrics";
 import { proposalFromRow } from "./proposals";
 
 export async function createRootExperiment(
@@ -25,6 +32,8 @@ export type DecisionInput = {
   decision: Decision;
   reviewerRole: ReviewerRole;
   now: Date;
+  // Required to approve: the approver's reading of the result.
+  outcome?: ProposalOutcome;
   // Required to approve: controller-assigned IDs for the next cycle and the
   // claim IDs the Content Agent may use.
   next?: {
@@ -61,11 +70,28 @@ export async function decideProposalAndAdvance(
         proposalFromRow(row),
         input.decision,
         input.reviewerRole,
-        input.now
+        input.now,
+        input.outcome
       );
 
       if (proposal.status === "approved" && !input.next) {
         throw new Error("Approving a proposal requires the next cycle's IDs.");
+      }
+
+      const parent = await tx.experiment.findUniqueOrThrow({
+        where: { id: proposal.experiment_id },
+        include: {
+          drafts: { select: { id: true, variantRole: true }, orderBy: { id: "asc" } },
+        },
+      });
+      let baselineContentId: string | undefined;
+      if (proposal.status === "approved" && proposal.outcome) {
+        assertCanStartNextCycle(parent.id, parent.cycle);
+        assertOutcomeAllowed(
+          proposal.outcome,
+          primaryKpiCalculable(await loadMetricRecords(tx, parent.id))
+        );
+        baselineContentId = chooseBaseline(proposal.outcome, parent.drafts);
       }
 
       // Conditional update: a concurrent decision leaves nothing to match.
@@ -75,6 +101,7 @@ export async function decideProposalAndAdvance(
           status: proposal.status,
           decidedByRole: input.reviewerRole,
           decidedAt: input.now,
+          outcome: proposal.outcome,
         },
       });
       if (updated.count !== 1) {
@@ -93,6 +120,7 @@ export async function decideProposalAndAdvance(
           reviewerRole: audit.reviewer_role,
           fromStatus: audit.from_status,
           toStatus: audit.to_status,
+          outcome: audit.outcome,
           occurredAt: new Date(audit.occurred_at),
         },
       });
@@ -101,15 +129,11 @@ export async function decideProposalAndAdvance(
         return { proposal, audit, handoff: null };
       }
 
-      const parent = await tx.experiment.findUniqueOrThrow({
-        where: { id: proposal.experiment_id },
-        include: { drafts: { select: { id: true }, orderBy: { id: "asc" } } },
-      });
-
       const handoff = buildNextCycleHandoff({
         proposal,
         sourceContentIds: parent.drafts.map((draft) => draft.id),
         approvedClaimIds: input.next.approvedClaimIds,
+        baselineContentId,
         nextExperimentId: input.next.experimentId,
         taskId: input.next.taskId,
         correlationId: parent.correlationId,

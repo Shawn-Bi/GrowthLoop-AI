@@ -24,7 +24,8 @@ import {
   reserveGenerationSlot,
 } from "@/lib/persistence/quota";
 import type { ProposalRecord, TestVariable } from "@/schemas/analytics";
-import type { Decision, ReviewerRole } from "@/schemas/audit";
+import type { Decision, ProposalOutcome, ReviewerRole } from "@/schemas/audit";
+import { chooseBaseline } from "./cycle-rules";
 import { ControllerError, TransitionError } from "./errors";
 import { nextSequentialId } from "./ids";
 
@@ -205,13 +206,15 @@ export async function runExperimentAnalysis(
 }
 
 // Approving starts the next cycle: the experiment ID follows the parent's,
-// and the Content Agent may use only approved or verified claims.
+// the approver's outcome picks the baseline, and the Content Agent may use
+// only the baseline's claims that are still approved or verified.
 export async function decideExperimentProposal(
   db: PrismaClient,
   proposalId: string,
   decision: Decision,
   reviewerRole: ReviewerRole,
-  now: Date
+  now: Date,
+  outcome?: ProposalOutcome
 ): Promise<DecisionResult> {
   const proposal = await loadProposal(db, proposalId);
   if (!proposal) {
@@ -221,8 +224,15 @@ export async function decideExperimentProposal(
   let next: { experimentId: string; taskId: string; approvedClaimIds: string[] } | undefined;
   if (decision === "approved") {
     const experimentId = nextSequentialId(proposal.experiment_id);
-    const baselineId = proposal.analysis.proposal.content_change?.baseline_content_id;
-    const baseline = baselineId ? await db.contentDraft.findUnique({ where: { id: baselineId } }) : null;
+    // Without an outcome, decideProposal refuses the approval (400).
+    const drafts = await db.contentDraft.findMany({
+      where: { experimentId: proposal.experiment_id },
+      select: { id: true, variantRole: true },
+    });
+    const baselineId = outcome
+      ? chooseBaseline(outcome, drafts)
+      : proposal.analysis.proposal.content_change.baseline_content_id;
+    const baseline = await db.contentDraft.findUnique({ where: { id: baselineId } });
     const usable = await loadUsableClaimIds(db);
     next = {
       experimentId,
@@ -236,6 +246,7 @@ export async function decideExperimentProposal(
     decision,
     reviewerRole,
     now,
+    outcome,
     next,
   });
 }

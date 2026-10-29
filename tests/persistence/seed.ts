@@ -42,6 +42,7 @@ export const approveInput = {
   decision: "approved" as const,
   reviewerRole: "experiment_approver" as const,
   now: new Date("2026-10-23T15:00:00.000Z"),
+  outcome: "inconclusive" as const,
   next: {
     experimentId: "exp_002",
     taskId: "task_002",

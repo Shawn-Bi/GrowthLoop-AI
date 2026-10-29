@@ -27,7 +27,7 @@ export async function saveMetricRecords(
 // Re-validated on read, so the Analytics Agent only ever sees records that
 // match the current contract.
 export async function loadMetricRecords(
-  db: PrismaClient,
+  db: Pick<PrismaClient, "metricRecord">,
   experimentId: string
 ): Promise<MetricRecord[]> {
   const rows = await db.metricRecord.findMany({

@@ -13,7 +13,8 @@ const approved = decideProposal(
   pendingProposal(),
   "approved",
   "experiment_approver",
-  new Date("2026-10-23T15:00:00.000Z")
+  new Date("2026-10-23T15:00:00.000Z"),
+  "inconclusive"
 ).proposal;
 
 const input = {

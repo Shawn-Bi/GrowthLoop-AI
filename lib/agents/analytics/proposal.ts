@@ -21,5 +21,6 @@ export function toProposalRecord(
     review_flags: review.ok ? review.review_flags : [],
     decided_by_role: null,
     decided_at: null,
+    outcome: null,
   };
 }

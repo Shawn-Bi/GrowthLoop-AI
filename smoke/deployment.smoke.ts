@@ -145,7 +145,7 @@ describe("Deployment smoke", () => {
     const decision = await call<{ handoff: { experiment_id: string } }>(
       "POST",
       `/api/proposals/${analysis.json.proposal_id}/decision`,
-      { body: { decision: "approved", reviewer_role: "experiment_approver" } }
+      { body: { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" } }
     );
     expect(decision.status, JSON.stringify(decision.json)).toBe(200);
     expect(decision.json.handoff.experiment_id).toBe(NEXT);

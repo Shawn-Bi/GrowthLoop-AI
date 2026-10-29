@@ -122,7 +122,7 @@ describe("protected routes", () => {
     ["POST metrics", () => loadMetrics(req("POST", "/api/experiments/exp_001/metrics", { dataset_id: "demo_fixture_v1" }, {}), exp1)],
     ["POST analysis", () => analyse(req("POST", "/api/experiments/exp_001/analysis", undefined, {}), exp1)],
     ["GET trace", () => getTrace(req("GET", "/api/experiments/exp_001/trace", undefined, {}), exp1)],
-    ["POST decision", () => decide(req("POST", "/api/proposals/p/decision", { decision: "approved", reviewer_role: "experiment_approver" }, {}), params({ proposalId: "p" }))],
+    ["POST decision", () => decide(req("POST", "/api/proposals/p/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }, {}), params({ proposalId: "p" }))],
   ])("%s returns 401 without credentials", async (_name, call) => {
     const response = await call();
 
@@ -199,7 +199,7 @@ describe("cycle 1 → cycle 2 through the API", () => {
     });
     expect(mocks.create).toHaveBeenCalledTimes(1);
 
-    const decisionBody = { decision: "approved", reviewer_role: "experiment_approver" };
+    const decisionBody = { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" };
     const proposalParams = params({ proposalId: "prop_exp_001_1" });
     const decision = await decide(
       req("POST", "/api/proposals/prop_exp_001_1/decision", decisionBody),

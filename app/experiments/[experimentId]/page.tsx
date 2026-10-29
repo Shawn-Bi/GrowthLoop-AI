@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { requirePageAccess } from "@/lib/auth/page-access";
+import { maxExperimentCycles, primaryKpiCalculable } from "@/lib/controller/cycle-rules";
 import { ControllerError } from "@/lib/controller/errors";
 import {
   loadExperimentOverview,
@@ -75,6 +76,7 @@ async function ExperimentDetail({
   const { experiment, drafts, metrics, proposals, handoff } = overview;
   const isOpen = experiment.status === "open";
   const hasPending = proposals.some((p) => p.status === "needs_human_approval");
+  const maxCycles = maxExperimentCycles();
 
   return (
     <div className="space-y-8">
@@ -169,7 +171,14 @@ async function ExperimentDetail({
           <p className="text-slate-400">No analysis has run for this experiment yet.</p>
         )}
         {proposals.map((proposal) => (
-          <ProposalCard key={proposal.proposal_id} proposal={proposal} />
+          <ProposalCard
+            key={proposal.proposal_id}
+            proposal={proposal}
+            primaryCalculable={primaryKpiCalculable(metrics)}
+            lastCycle={
+              experiment.cycle >= maxCycles ? { cycle: experiment.cycle, max: maxCycles } : null
+            }
+          />
         ))}
         {isOpen && metrics.length > 0 && !hasPending && (
           <RunAnalysisButton experimentId={experiment.id} />
@@ -229,7 +238,21 @@ function MetricsTable({ metrics }: { metrics: MetricRecord[] }) {
   );
 }
 
-function ProposalCard({ proposal }: { proposal: ProposalRecord }) {
+const OUTCOME_LABELS = {
+  control_better: "control did better",
+  variant_better: "variant did better",
+  inconclusive: "inconclusive",
+} as const;
+
+function ProposalCard({
+  proposal,
+  primaryCalculable,
+  lastCycle,
+}: {
+  proposal: ProposalRecord;
+  primaryCalculable: boolean;
+  lastCycle: { cycle: number; max: number } | null;
+}) {
   const { analysis } = proposal;
 
   return (
@@ -275,20 +298,25 @@ function ProposalCard({ proposal }: { proposal: ProposalRecord }) {
         <p>Change only <code>{analysis.proposal.primary_test_variable}</code>.</p>
         <p>Hold constant: {analysis.proposal.control_conditions.join(" ")}</p>
         <p>Stop rule: {analysis.proposal.stop_rule}</p>
-        {analysis.proposal.content_change && <div>
-          <p>Baseline: <code>{analysis.proposal.content_change.baseline_content_id}</code></p>
+        <div>
+          <p>Agent&apos;s suggested baseline: <code>{analysis.proposal.content_change.baseline_content_id}</code> (your outcome below decides)</p>
           <p className="whitespace-pre-wrap">Proposed replacement: {analysis.proposal.content_change.variant_value}</p>
-        </div>}
+        </div>
       </div>
 
       {proposal.decided_at && (
         <p className="text-sm text-slate-400">
           {proposal.status} by {proposal.decided_by_role?.replaceAll("_", " ")} at{" "}
           {new Date(proposal.decided_at).toISOString()}
+          {proposal.outcome && `; outcome: ${OUTCOME_LABELS[proposal.outcome]}`}
         </p>
       )}
       {proposal.status === "needs_human_approval" && (
-        <ProposalDecision proposalId={proposal.proposal_id} />
+        <ProposalDecision
+          proposalId={proposal.proposal_id}
+          primaryCalculable={primaryCalculable}
+          lastCycle={lastCycle}
+        />
       )}
     </article>
   );

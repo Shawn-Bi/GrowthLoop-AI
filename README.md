@@ -83,6 +83,7 @@ ANTHROPIC_MODEL=
 DATABASE_URL=              # Neon pooled runtime connection
 DATABASE_URL_UNPOOLED=     # Neon direct migration connection
 DEMO_ACCESS_CODE=
+MAX_EXPERIMENT_CYCLES=     # optional; default 2 (the demo), separate from the 3-revision limit
 ```
 Do not use `NEXT_PUBLIC_ANTHROPIC_*`. No `SESSION_SECRET` is required for this no-login MVP. Do not commit `.env.local`, keys or database URLs. Anthropic client imports `server-only`. In Prisma 7, use explicit driver adapter and `prisma.config.ts`; load `.env.local` intentionally for local CLI if required.
 

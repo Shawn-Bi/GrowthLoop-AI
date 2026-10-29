@@ -8,6 +8,9 @@ export type NextCycleInput = {
   // Drafts whose metrics the proposal analysed.
   sourceContentIds: string[];
   approvedClaimIds: string[];
+  // The baseline the approver's outcome picked (chooseBaseline). It replaces
+  // the Agent's suggested baseline; the replacement text stays the Agent's.
+  baselineContentId?: string;
   // Controller-assigned IDs for the new cycle.
   nextExperimentId: string;
   taskId: string;
@@ -30,13 +33,16 @@ export function buildNextCycleHandoff(input: NextCycleInput): Handoff {
   const { analysis } = proposal;
   const findingMetricIds = analysis.findings.flatMap((f) => f.metric_ids);
 
-  // The Agent picks the baseline from the drafts it analysed; anything else
-  // can't be turned into a valid next-cycle pair.
-  if (!input.sourceContentIds.includes(analysis.proposal.content_change.baseline_content_id)) {
-    throw new TransitionError(
-      `Proposal ${proposal.proposal_id} uses baseline ${analysis.proposal.content_change.baseline_content_id}, which isn't one of the analysed drafts.`,
-      409
-    );
+  // The Agent suggests a baseline from the drafts it analysed; a proposal
+  // that names any other draft is malformed, even if the approver overrides it.
+  const baselineContentId = input.baselineContentId ?? analysis.proposal.content_change.baseline_content_id;
+  for (const id of [analysis.proposal.content_change.baseline_content_id, baselineContentId]) {
+    if (!input.sourceContentIds.includes(id)) {
+      throw new TransitionError(
+        `Proposal ${proposal.proposal_id} uses baseline ${id}, which isn't one of the analysed drafts.`,
+        409
+      );
+    }
   }
 
   return handoffSchema.parse({
@@ -51,7 +57,7 @@ export function buildNextCycleHandoff(input: NextCycleInput): Handoff {
     source_content_ids: input.sourceContentIds,
     approved_claim_ids: input.approvedClaimIds,
     hypothesis: analysis.proposal.hypothesis,
-    content_change: analysis.proposal.content_change,
+    content_change: { ...analysis.proposal.content_change, baseline_content_id: baselineContentId },
     primary_test_variable: analysis.proposal.primary_test_variable,
     control_conditions: analysis.proposal.control_conditions,
     metric_ids: [

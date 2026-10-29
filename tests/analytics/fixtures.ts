@@ -64,5 +64,6 @@ export function pendingProposal(): ProposalRecord {
     review_flags: [],
     decided_by_role: null,
     decided_at: null,
+    outcome: null,
   };
 }

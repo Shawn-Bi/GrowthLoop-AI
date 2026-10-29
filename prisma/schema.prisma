@@ -42,6 +42,14 @@ enum ProposalStatus {
   error
 }
 
+// The experiment approver's reading of a cycle's result. It decides the
+// next cycle's baseline; the system never picks a winner (PR #13).
+enum ProposalOutcome {
+  control_better
+  variant_better
+  inconclusive
+}
+
 enum AgentRunStatus {
   started
   completed
@@ -128,6 +136,8 @@ model AnalysisReport {
   reviewFlags   String[]
   decidedByRole ReviewerRole?
   decidedAt     DateTime?
+  // Set when approved.
+  outcome       ProposalOutcome?
   createdAt     DateTime       @default(now())
   handoff       Handoff?
 
@@ -171,6 +181,8 @@ model AuditEvent {
   reviewerRole ReviewerRole
   fromStatus   String
   toStatus     String
+  // Approved experiment proposals only.
+  outcome      ProposalOutcome?
   occurredAt   DateTime
 
   @@index([recordId])
