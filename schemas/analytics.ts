@@ -25,6 +25,7 @@ export const analyticsOutputSchema = z.object({
   uncertainty: z.string().min(1),
   proposal: z.object({
     hypothesis: z.string().min(1),
+    content_change: z.object({ baseline_content_id: z.string().min(1), variant_value: z.string().trim().min(1).max(4000) }).optional(),
     primary_test_variable: testVariableSchema,
     // Every dimension the next drafts would change; must be exactly the
     // primary test variable for a one-variable experiment.

@@ -16,6 +16,7 @@ export const handoffSchema = z
     source_content_ids: z.array(id),
     approved_claim_ids: z.array(id),
     hypothesis: z.string().min(1),
+    content_change: z.object({ baseline_content_id: id, variant_value: z.string().trim().min(1).max(4000) }).optional(),
     primary_test_variable: testVariableSchema,
     control_conditions: z.array(z.string().min(1)).min(1),
     metric_ids: z.array(id),

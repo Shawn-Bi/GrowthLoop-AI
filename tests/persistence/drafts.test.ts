@@ -31,7 +31,7 @@ beforeEach(async () => {
   await createCycleOneExperiment(testDb.db, { hypothesis: "h", primaryTestVariable: "hook" });
   await testDb.db.contentDraft.createMany({
     data: [
-      { id: "cnt_001", experimentId: "exp_001", variantRole: "control", body: "a", contentDna: {}, claimIdsUsed: ["clm_ok"], status: "pending_approval" },
+      { id: "cnt_001", experimentId: "exp_001", variantRole: "control", body: "Hypothetical product — demonstration only\n\nok", contentDna: {}, claimIdsUsed: ["clm_ok"], status: "pending_approval" },
       { id: "cnt_002", experimentId: "exp_001", variantRole: "variant", body: "b", contentDna: {}, claimIdsUsed: ["clm_ok", "clm_bad"], status: "needs_review" },
     ],
   });

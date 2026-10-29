@@ -72,8 +72,9 @@ describe("POST /api/experiments", () => {
 describe("POST /api/drafts/[draftId]/decision", () => {
   beforeEach(async () => {
     await createRoute(req("POST", "/api/experiments", { hypothesis: "h", primary_test_variable: "hook" }));
+    await testDb.db.claim.create({ data: { id: "clm_ok", registryVersion: "v1", text: "a", status: "verified_claim", sourceOrEvidence: "test", reviewer: "test", reviewedAt: new Date(), demoOnly: false } });
     await testDb.db.contentDraft.create({
-      data: { id: "cnt_001", experimentId: "exp_001", variantRole: "control", body: "a", contentDna: {}, claimIdsUsed: [], status: "pending_approval" },
+      data: { id: "cnt_001", experimentId: "exp_001", variantRole: "control", body: "a", contentDna: {}, claimIdsUsed: ["clm_ok"], status: "pending_approval" },
     });
   });
 

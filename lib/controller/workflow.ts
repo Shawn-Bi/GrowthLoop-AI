@@ -164,6 +164,10 @@ export async function runExperimentAnalysis(
     orderBy: { id: "asc" },
   });
 
+  if (drafts.length !== 2 || new Set(drafts.map((draft) => draft.variantRole)).size !== 2 ||
+      drafts.some((draft) => !PUBLISHED_DRAFT_STATUSES.includes(draft.status as "approved" | "ready_for_manual_publication"))) {
+    throw new TransitionError("Analysis requires two human-approved experiment drafts.", 409);
+  }
   const slot = await reserveGenerationSlot(db, now);
   let result: AnalyticsRunResult;
   try {
@@ -217,10 +221,13 @@ export async function decideExperimentProposal(
   let next: { experimentId: string; taskId: string; approvedClaimIds: string[] } | undefined;
   if (decision === "approved") {
     const experimentId = nextSequentialId(proposal.experiment_id);
+    const baselineId = proposal.analysis.proposal.content_change?.baseline_content_id;
+    const baseline = baselineId ? await db.contentDraft.findUnique({ where: { id: baselineId } }) : null;
+    const usable = await loadUsableClaimIds(db);
     next = {
       experimentId,
       taskId: `task_${experimentId}`,
-      approvedClaimIds: await loadUsableClaimIds(db),
+      approvedClaimIds: baseline ? baseline.claimIdsUsed.filter((id) => usable.includes(id)) : usable,
     };
   }
 
