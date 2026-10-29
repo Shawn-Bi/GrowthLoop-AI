@@ -26,7 +26,7 @@ describe("GL-03: approved simulated, pre-authored data (not campaign results)", 
       .toEqual(expected.invalid_rows.map((row: { index_zero_based: number; variant_role: string; reason: string }) => ({ index: row.index_zero_based, role: row.variant_role, reasons: [row.reason] })));
     expect(ingestion.accepted.map((row) => row.content_id)).toEqual(["gl03_control", "gl03_variant"]);
   });
-  it.each(expected.valid_rows)("matches both independent KPIs for $variant_role", (row) => {
+  it.each<(typeof import("../../data/fixtures/expected.json"))["valid_rows"][number]>(expected.valid_rows)("matches both independent KPIs for $variant_role", (row) => {
     const accepted = ingestion.accepted.find((item) => item.variant_role === row.variant_role)!;
     expect(accepted.qualified_demo_requests).toBe(row.numerator_qualified_demo_requests);
     expect(accepted.landing_page_visits).toBe(row.primary_denominator_landing_page_visits);
