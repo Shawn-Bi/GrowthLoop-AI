@@ -44,7 +44,10 @@ export async function decideDraft(
     if (input.action === "approve" || input.action === "mark_ready") {
       const usable = new Set(await loadUsableClaimIds(tx));
       const unusable = draft.claimIdsUsed.filter((id) => !usable.has(id));
-      if (draft.claimIdsUsed.length === 0 || unusable.length > 0) {
+      if (draft.claimIdsUsed.length === 0) {
+        throw new TransitionError(`Draft ${draft.id} has no registry claims to check.`, 409);
+      }
+      if (unusable.length > 0) {
         throw new TransitionError(
           `Draft ${draft.id} uses claims that aren't approved: ${unusable.join(", ")}.`,
           409
