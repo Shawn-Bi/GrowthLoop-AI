@@ -75,15 +75,28 @@ describe("reviewAnalysis", () => {
     });
   });
 
-  it("flags proposals that change more than one variable", () => {
+  it("blocks proposals that change more than one variable", () => {
     const output = validOutput();
     output.proposal.changed_dimensions = ["hook", "cta"];
 
     const review = reviewAnalysis(output, metrics);
 
-    expect(review.ok && review.review_flags).toEqual([
-      "Proposal changes hook, cta but a one-variable test should change only hook.",
-    ]);
+    expect(review).toEqual({
+      ok: false,
+      errors: [
+        "One-variable test required: the proposal changes hook, cta, but it may change only its primary test variable, hook. Run the analysis again.",
+      ],
+    });
+  });
+
+  it("blocks proposals whose changed dimension isn't the primary test variable", () => {
+    const output = validOutput();
+    output.proposal.changed_dimensions = ["cta"];
+
+    const review = reviewAnalysis(output, metrics);
+
+    expect(review.ok).toBe(false);
+    expect(!review.ok && review.errors[0]).toContain("changes cta");
   });
 
   it("flags causal or overconfident wording", () => {
