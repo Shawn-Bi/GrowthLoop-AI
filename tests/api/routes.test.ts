@@ -12,6 +12,8 @@ import { createRootExperiment } from "@/lib/persistence/experiments";
 import { validOutput } from "../analytics/fixtures";
 import { drafts } from "../kpi/fixtures";
 import { setupTestDb, type TestDb } from "../persistence/db";
+import { validDna } from "../persistence/dna";
+import { SEED_CLAIM_TEXT } from "../persistence/seed";
 
 const mocks = vi.hoisted(() => ({
   db: null as unknown,
@@ -87,6 +89,11 @@ beforeEach(async () => {
     hypothesis: "A question hook earns more qualified demo requests.",
     primaryTestVariable: "hook",
   });
+  // Approving the proposal generates the Cycle 2 pair from the baseline's
+  // Content DNA, so the seeded drafts carry valid DNA and a registry claim.
+  await testDb.db.claim.create({
+    data: { id: "clm_001", registryVersion: "v1", text: SEED_CLAIM_TEXT, status: "approved_demo_claim", sourceOrEvidence: "Test-only demo claim", reviewer: "Michelle", reviewedAt: new Date("2026-10-21"), demoOnly: true },
+  });
   for (const draft of drafts) {
     await testDb.db.contentDraft.create({
       data: {
@@ -94,8 +101,8 @@ beforeEach(async () => {
         experimentId: "exp_001",
         variantRole: draft.variant_role,
         body: "post",
-        contentDna: { hook: draft.variant_role },
-        claimIdsUsed: [],
+        contentDna: validDna({ variant_role: draft.variant_role, claim_ids_used: ["clm_001"], hook: `Test ${draft.variant_role} hook`, evidence: SEED_CLAIM_TEXT }),
+        claimIdsUsed: ["clm_001"],
         status: "approved",
       },
     });

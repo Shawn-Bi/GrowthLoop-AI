@@ -12,6 +12,7 @@ import { reserveGenerationSlot } from "@/lib/persistence/quota";
 import { validOutput } from "../analytics/fixtures";
 import { controlRow, drafts, variantRow } from "../kpi/fixtures";
 import { setupTestDb, type TestDb } from "../persistence/db";
+import { validDna } from "../persistence/dna";
 
 const now = new Date("2026-10-23T15:00:00.000Z");
 
@@ -213,10 +214,15 @@ describe("decideExperimentProposal", () => {
   });
 
   it("approval starts exp_002 with only approved or verified claims", async () => {
-    // The next cycle keeps the baseline draft's claims, minus unusable ones.
+    // The next cycle keeps the baseline draft's claims, and approval now
+    // generates the Cycle 2 pair from its Content DNA, so the baseline needs
+    // valid DNA that uses only usable claims (clm_003 is rejected).
     await testDb.db.contentDraft.update({
       where: { id: "cnt_001" },
-      data: { claimIdsUsed: ["clm_001", "clm_002", "clm_003"] },
+      data: {
+        claimIdsUsed: ["clm_001", "clm_002"],
+        contentDna: validDna({ claim_ids_used: ["clm_001", "clm_002"], evidence: "a b" }),
+      },
     });
     const result = await decideExperimentProposal(
       testDb.db, "prop_exp_001_1", "approved", "experiment_approver", now
