@@ -81,7 +81,9 @@ export async function seedClaimRegistry(
 
 // Claim IDs the Content Agent may use: approved demo claims and verified
 // claims, never rejected or unknown ones.
-export async function loadUsableClaimIds(db: PrismaClient): Promise<string[]> {
+export async function loadUsableClaimIds(
+  db: Pick<PrismaClient, "claim">
+): Promise<string[]> {
   const claims = await db.claim.findMany({
     where: { status: { in: [...USABLE_CLAIM_STATUSES] } },
     select: { id: true },

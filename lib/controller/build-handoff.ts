@@ -42,6 +42,7 @@ export function buildNextCycleHandoff(input: NextCycleInput): Handoff {
     source_content_ids: input.sourceContentIds,
     approved_claim_ids: input.approvedClaimIds,
     hypothesis: analysis.proposal.hypothesis,
+    ...(analysis.proposal.content_change ? { content_change: analysis.proposal.content_change } : {}),
     primary_test_variable: analysis.proposal.primary_test_variable,
     control_conditions: analysis.proposal.control_conditions,
     metric_ids: [

@@ -1,0 +1,115 @@
+{
+  "mode": "HTTP harness + production API handlers + real SQL + stubbed Anthropic transport",
+  "traces": [
+    {
+      "event": "content_handoff",
+      "side": "controller_send",
+      "correlation_id": "corr_exp_001",
+      "experiment_id": "exp_001",
+      "primary_test_variable": "hook",
+      "payload_sha256": "90afd5aac6748b18ae728c99b580371ed6789f74390fd6d21711d6279ef573be",
+      "field_hashes": {
+        "findings": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "metric_ids": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "primary_test_variable": "73473d2159beb5bcb8917122749ee83a3497831373b65c776b274f1bf099a844",
+        "approved_claim_ids": "9b23a782c7ddf05e6388e3595589368b49c30fd80a5c779950c9cf1269f6301d",
+        "approval_state": "70ab47ec8fbd75027e36d5fae28639b51de6e7265220723cc99156dca295fcc5"
+      },
+      "missing_or_rejected": [],
+      "transformed": []
+    },
+    {
+      "event": "content_handoff",
+      "side": "content_receive",
+      "correlation_id": "corr_exp_001",
+      "experiment_id": "exp_001",
+      "primary_test_variable": "hook",
+      "payload_sha256": "90afd5aac6748b18ae728c99b580371ed6789f74390fd6d21711d6279ef573be",
+      "field_hashes": {
+        "findings": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "metric_ids": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "primary_test_variable": "73473d2159beb5bcb8917122749ee83a3497831373b65c776b274f1bf099a844",
+        "approved_claim_ids": "9b23a782c7ddf05e6388e3595589368b49c30fd80a5c779950c9cf1269f6301d",
+        "approval_state": "70ab47ec8fbd75027e36d5fae28639b51de6e7265220723cc99156dca295fcc5"
+      },
+      "missing_or_rejected": [],
+      "transformed": []
+    },
+    {
+      "event": "content_handoff",
+      "side": "content_result",
+      "correlation_id": "corr_exp_001",
+      "experiment_id": "exp_001",
+      "primary_test_variable": "hook",
+      "payload_sha256": "90afd5aac6748b18ae728c99b580371ed6789f74390fd6d21711d6279ef573be",
+      "field_hashes": {
+        "findings": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "metric_ids": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "primary_test_variable": "73473d2159beb5bcb8917122749ee83a3497831373b65c776b274f1bf099a844",
+        "approved_claim_ids": "9b23a782c7ddf05e6388e3595589368b49c30fd80a5c779950c9cf1269f6301d",
+        "approval_state": "70ab47ec8fbd75027e36d5fae28639b51de6e7265220723cc99156dca295fcc5"
+      },
+      "missing_or_rejected": [],
+      "transformed": [
+        "A→control",
+        "B→variant",
+        "registry-status→approved"
+      ]
+    },
+    {
+      "event": "content_handoff",
+      "side": "controller_send",
+      "correlation_id": "corr_exp_001",
+      "experiment_id": "exp_002",
+      "primary_test_variable": "hook",
+      "payload_sha256": "cacedbd68942544584a8e56ed6d1d796dd8df5b8f9b9d0e834435a3e5fdd1c62",
+      "field_hashes": {
+        "findings": "8bc5d8f7054a9e6a367c6f01944fb2579ca31a42308e04a92e42bd87dbc8de9f",
+        "metric_ids": "bf1a01fd31d6ba45f96a60aa1f2a91911d136f90d9516897ec61327833825b06",
+        "primary_test_variable": "73473d2159beb5bcb8917122749ee83a3497831373b65c776b274f1bf099a844",
+        "approved_claim_ids": "9b23a782c7ddf05e6388e3595589368b49c30fd80a5c779950c9cf1269f6301d",
+        "approval_state": "70ab47ec8fbd75027e36d5fae28639b51de6e7265220723cc99156dca295fcc5"
+      },
+      "missing_or_rejected": [],
+      "transformed": []
+    },
+    {
+      "event": "content_handoff",
+      "side": "content_receive",
+      "correlation_id": "corr_exp_001",
+      "experiment_id": "exp_002",
+      "primary_test_variable": "hook",
+      "payload_sha256": "cacedbd68942544584a8e56ed6d1d796dd8df5b8f9b9d0e834435a3e5fdd1c62",
+      "field_hashes": {
+        "findings": "8bc5d8f7054a9e6a367c6f01944fb2579ca31a42308e04a92e42bd87dbc8de9f",
+        "metric_ids": "bf1a01fd31d6ba45f96a60aa1f2a91911d136f90d9516897ec61327833825b06",
+        "primary_test_variable": "73473d2159beb5bcb8917122749ee83a3497831373b65c776b274f1bf099a844",
+        "approved_claim_ids": "9b23a782c7ddf05e6388e3595589368b49c30fd80a5c779950c9cf1269f6301d",
+        "approval_state": "70ab47ec8fbd75027e36d5fae28639b51de6e7265220723cc99156dca295fcc5"
+      },
+      "missing_or_rejected": [],
+      "transformed": []
+    },
+    {
+      "event": "content_handoff",
+      "side": "content_result",
+      "correlation_id": "corr_exp_001",
+      "experiment_id": "exp_002",
+      "primary_test_variable": "hook",
+      "payload_sha256": "cacedbd68942544584a8e56ed6d1d796dd8df5b8f9b9d0e834435a3e5fdd1c62",
+      "field_hashes": {
+        "findings": "8bc5d8f7054a9e6a367c6f01944fb2579ca31a42308e04a92e42bd87dbc8de9f",
+        "metric_ids": "bf1a01fd31d6ba45f96a60aa1f2a91911d136f90d9516897ec61327833825b06",
+        "primary_test_variable": "73473d2159beb5bcb8917122749ee83a3497831373b65c776b274f1bf099a844",
+        "approved_claim_ids": "9b23a782c7ddf05e6388e3595589368b49c30fd80a5c779950c9cf1269f6301d",
+        "approval_state": "70ab47ec8fbd75027e36d5fae28639b51de6e7265220723cc99156dca295fcc5"
+      },
+      "missing_or_rejected": [],
+      "transformed": [
+        "A→control",
+        "B→variant",
+        "registry-status→approved"
+      ]
+    }
+  ]
+}

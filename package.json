@@ -22,12 +22,15 @@
     "smoke:deploy": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S4)\"",
     "smoke:deploy:write": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S2 write)\"",
     "smoke:deploy:read": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S2 read)\"",
-    "smoke:deploy:cleanup": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S2 cleanup)\""
+    "smoke:deploy:cleanup": "vitest run --config vitest.smoke.config.mts smoke/deployment.smoke.ts -t \"(config|S2 cleanup)\"",
+    "test:integration": "vitest run tests/integration --maxWorkers=1",
+    "test:content": "tsc --target es2022 --module commonjs --moduleResolution node --skipLibCheck --esModuleInterop --outDir .content-agent-test-build lib/content-agent/claim-registry.ts lib/content-agent/validate-brief.ts lib/content-agent/generate-posts.ts lib/content-agent/revision-loop.ts lib/content-agent/approve-posts.ts && node --test tests/content-agent.test.cjs tests/content-agent-ab-contract.test.cjs tests/content-agent-claims.test.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.137.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
+    "geist": "1.8.2",
     "next": "16.4.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",

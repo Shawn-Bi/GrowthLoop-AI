@@ -1,11 +1,13 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
+import { validDna } from "../tests/persistence/dna";
 
 // S4 and S2 (preview) against a running deployment: health and access
 // protection, then a real analytics round trip written through the deployed
-// app, a redeploy, and a read-back. Seeds and removes its own exp_smoke_*
-// rows. Costs one Analytics Agent call and one daily generation slot.
+// app, including the Cycle 2 drafts the approval generates, a redeploy, and
+// a read-back. Seeds and removes its own exp_smoke_* rows and clm_smoke_*
+// claim. Costs one Analytics Agent call and one daily generation slot.
 try {
   process.loadEnvFile(".env.local");
 } catch {
@@ -20,6 +22,8 @@ const configured = Boolean(baseUrl && accessCode && databaseUrl);
 
 const ROOT = "exp_smoke_001";
 const NEXT = "exp_smoke_002";
+const CLAIM = "clm_smoke_demo";
+const CLAIM_TEXT = "GrantReady is a hypothetical product.";
 // Within maxDuration (120 s) of the analysis route.
 const ANALYSIS_BUDGET_MS = 120_000;
 
@@ -70,6 +74,7 @@ async function removeSmokeRows(db: PrismaClient) {
   await db.metricRecord.deleteMany({ where: { experimentId: smoke } });
   await db.contentDraft.deleteMany({ where: { experimentId: smoke } });
   await db.experiment.deleteMany({ where: { id: smoke } });
+  await db.claim.deleteMany({ where: { id: { startsWith: "clm_smoke_" } } });
 }
 
 describe("Deployment smoke", () => {
@@ -110,15 +115,37 @@ describe("Deployment smoke", () => {
           primaryTestVariable: "hook",
         },
       });
+      // Approval generates the Cycle 2 pair from the baseline's Content DNA,
+      // so the seeded drafts need valid DNA and a usable registry claim. The
+      // claim text sits in two fields, so one changed dimension keeps it.
+      await db.claim.create({
+        data: {
+          id: CLAIM,
+          registryVersion: "smoke",
+          text: CLAIM_TEXT,
+          status: "approved_demo_claim",
+          sourceOrEvidence: "Smoke-test claim, removed afterwards",
+          reviewer: "smoke",
+          reviewedAt: new Date(),
+          demoOnly: true,
+        },
+      });
       for (const role of ["control", "variant"] as const) {
         await db.contentDraft.create({
           data: {
             id: `cnt_smoke_${role}`,
             experimentId: ROOT,
             variantRole: role,
-            body: `Smoke-test ${role} draft. Hypothetical product — demonstration only.`,
-            contentDna: { hook: role === "control" ? "question" : "pain point" },
-            claimIdsUsed: [],
+            body: `Smoke-test ${role} draft. Hypothetical product — demonstration only. ${CLAIM_TEXT}`,
+            contentDna: validDna({
+              variant_role: role,
+              claim_ids_used: [CLAIM],
+              hook: role === "control" ? "Missed a grant deadline?" : "Grant deadlines cost nonprofits funding.",
+              value_proposition: `One place to track grant deadlines. ${CLAIM_TEXT}`,
+              evidence: CLAIM_TEXT,
+              generation_context: { ...validDna().generation_context, correlation_id: "corr_smoke", experiment_id: ROOT },
+            }),
+            claimIdsUsed: [CLAIM],
             status: "approved",
           },
         });
@@ -145,7 +172,7 @@ describe("Deployment smoke", () => {
     const decision = await call<{ handoff: { experiment_id: string } }>(
       "POST",
       `/api/proposals/${analysis.json.proposal_id}/decision`,
-      { body: { decision: "approved", reviewer_role: "experiment_approver" } }
+      { body: { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" } }
     );
     expect(decision.status, JSON.stringify(decision.json)).toBe(200);
     expect(decision.json.handoff.experiment_id).toBe(NEXT);
@@ -156,10 +183,16 @@ describe("Deployment smoke", () => {
     const next = await call<{
       experiment: { parent_experiment_id: string };
       handoff: { next_action: string };
+      drafts: { variant_role: string; status: string }[];
     }>("GET", `/api/experiments/${NEXT}`);
     expect(next.status, `Run npm run smoke:deploy:write first`).toBe(200);
     expect(next.json.experiment.parent_experiment_id).toBe(ROOT);
     expect(next.json.handoff.next_action).toBe("generate_content_drafts");
+    // The approval generated both Cycle 2 drafts, awaiting human review.
+    expect(next.json.drafts.map((draft) => [draft.variant_role, draft.status]).sort()).toEqual([
+      ["control", "pending_approval"],
+      ["variant", "pending_approval"],
+    ]);
 
     const trace = await call<{ trace: { experiment_id: string }[] }>(
       "GET",

@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { generateContentInTransaction } from "@/lib/controller/content-generation";
 import { buildNextCycleHandoff } from "@/lib/controller/build-handoff";
 import { TransitionError } from "@/lib/controller/errors";
 import { decideProposal } from "@/lib/controller/proposal-approval";
@@ -142,6 +143,11 @@ export async function decideProposalAndAdvance(
         },
       });
 
+      // The child pair is always generated in this same transaction. If the
+      // baseline's Content DNA is missing, empty or invalid, generation throws
+      // and the whole approval rolls back, so no child experiment or handoff
+      // is ever left without its Cycle 2 drafts.
+      await generateContentInTransaction(tx, handoff.experiment_id);
       return { proposal, audit, handoff };
     });
   } catch (error) {

@@ -38,6 +38,10 @@ export function validOutput(): AnalyticsOutput {
     proposal: {
       hypothesis:
         "Opening with the grant-deadline pain point may raise qualified demo requests per landing-page visit.",
+      content_change: {
+        baseline_content_id: "cnt_001",
+        variant_value: "Missing a grant deadline costs a year of funding.",
+      },
       primary_test_variable: "hook",
       changed_dimensions: ["hook"],
       control_conditions: [

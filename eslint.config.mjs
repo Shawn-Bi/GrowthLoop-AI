@@ -5,8 +5,11 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  { files: ["tests/**/*.cjs"], rules: { "@typescript-eslint/no-require-imports": "off" } },
   // Override default ignores of eslint-config-next.
   globalIgnores([
+    ".content-agent-test-build/**",
+    "test-results/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
