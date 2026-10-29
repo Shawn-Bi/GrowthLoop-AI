@@ -1,0 +1,50 @@
+[
+  {
+    "dataset_id": "demo_fixture_v1",
+    "experiment_id": "exp_001",
+    "variant_role": "control",
+    "source": "simulated",
+    "impressions": 1000,
+    "link_clicks": 100,
+    "landing_page_visits": 80,
+    "demo_requests": 12,
+    "qualified_demo_requests": 8,
+    "notes": "Valid control. Pre-authored synthetic outcomes; not measured campaign performance."
+  },
+  {
+    "dataset_id": "demo_fixture_v1",
+    "experiment_id": "exp_001",
+    "variant_role": "variant",
+    "source": "simulated",
+    "impressions": 1000,
+    "link_clicks": 120,
+    "landing_page_visits": 100,
+    "demo_requests": 20,
+    "qualified_demo_requests": 15,
+    "notes": "Valid variant. Pre-authored synthetic outcomes; not evidence that generated content caused lift."
+  },
+  {
+    "dataset_id": "demo_fixture_v1",
+    "experiment_id": "exp_001",
+    "variant_role": "control",
+    "source": "simulated",
+    "impressions": 1000,
+    "link_clicks": 100,
+    "landing_page_visits": 80,
+    "demo_requests": 12,
+    "qualified_demo_requests": 13,
+    "notes": "INVALID intentionally: qualified_demo_requests (13) exceeds demo_requests (12)."
+  },
+  {
+    "dataset_id": "demo_fixture_v1",
+    "experiment_id": "exp_001",
+    "variant_role": "variant",
+    "source": "simulated",
+    "impressions": 1000,
+    "link_clicks": 120,
+    "landing_page_visits": 130,
+    "demo_requests": 20,
+    "qualified_demo_requests": 15,
+    "notes": "INVALID intentionally: landing_page_visits (130) exceeds link_clicks (120)."
+  }
+]
