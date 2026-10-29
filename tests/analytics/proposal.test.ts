@@ -18,12 +18,23 @@ describe("toProposalRecord", () => {
 
   it("keeps review flags for the approver", () => {
     const output = validOutput();
-    output.proposal.changed_dimensions = ["hook", "cta"];
+    output.proposal.hypothesis =
+      "A pain-point hook will increase demo requests, as the variant proved.";
 
     const proposal = toProposalRecord("prop_001", "exp_001", output, metrics);
 
     expect(proposal.status).toBe("needs_human_approval");
-    expect(proposal.review_flags).toHaveLength(1);
+    expect(proposal.review_flags.length).toBeGreaterThan(0);
+  });
+
+  it("marks multi-variable proposals as errors, so they can't be approved", () => {
+    const output = validOutput();
+    output.proposal.changed_dimensions = ["hook", "cta"];
+
+    const proposal = toProposalRecord("prop_001", "exp_001", output, metrics);
+
+    expect(proposal).toMatchObject({ status: "error", review_flags: [] });
+    expect(proposal.errors[0]).toContain("One-variable test required");
   });
 
   it("marks analyses with fabricated metric IDs as errors", () => {

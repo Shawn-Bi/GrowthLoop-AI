@@ -92,8 +92,10 @@ function unverifiedNumbers(text: string, cited: MetricRecord[]): string[] {
 }
 
 // Checks an Analytics Agent output against the stored metrics it was given.
-// Unknown metric IDs are fabricated evidence and block the proposal; other
-// concerns become review flags for the human approver.
+// Unknown metric IDs are fabricated evidence, and a proposal that changes
+// anything other than its one primary test variable breaks the strict A/B
+// rule agreed on PR #13; both block the proposal. Other concerns become
+// review flags for the human approver.
 export function reviewAnalysis(
   output: AnalyticsOutput,
   metrics: MetricRecord[]
@@ -109,6 +111,17 @@ export function reviewAnalysis(
     return {
       ok: false,
       errors: unknownIds.map((id) => `Unknown metric_id: ${id}`),
+    };
+  }
+
+  const { primary_test_variable, changed_dimensions } = output.proposal;
+  const changed = new Set(changed_dimensions);
+  if (changed.size !== 1 || !changed.has(primary_test_variable)) {
+    return {
+      ok: false,
+      errors: [
+        `One-variable test required: the proposal changes ${[...changed].join(", ")}, but it may change only its primary test variable, ${primary_test_variable}. Run the analysis again.`,
+      ],
     };
   }
 
@@ -136,14 +149,6 @@ export function reviewAnalysis(
   for (const text of unverifiedNumbers(output.summary, allCited)) {
     flags.push(
       `Summary mentions "${text}", which doesn't match any cited metric.`
-    );
-  }
-
-  const { primary_test_variable, changed_dimensions } = output.proposal;
-  const changed = new Set(changed_dimensions);
-  if (changed.size !== 1 || !changed.has(primary_test_variable)) {
-    flags.push(
-      `Proposal changes ${[...changed].join(", ")} but a one-variable test should change only ${primary_test_variable}.`
     );
   }
 

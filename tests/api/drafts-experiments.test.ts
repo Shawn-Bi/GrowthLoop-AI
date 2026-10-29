@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as decideDraftRoute } from "@/app/api/drafts/[draftId]/decision/route";
 import { GET as listRoute, POST as createRoute } from "@/app/api/experiments/route";
 import { setupTestDb, type TestDb } from "../persistence/db";
+import { validDna } from "../persistence/dna";
 
 const mocks = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db", () => ({ getDb: () => mocks.db }));
@@ -74,7 +75,7 @@ describe("POST /api/drafts/[draftId]/decision", () => {
     await createRoute(req("POST", "/api/experiments", { hypothesis: "h", primary_test_variable: "hook" }));
     await testDb.db.claim.create({ data: { id: "clm_ok", registryVersion: "v1", text: "a", status: "verified_claim", sourceOrEvidence: "test", reviewer: "test", reviewedAt: new Date(), demoOnly: false } });
     await testDb.db.contentDraft.create({
-      data: { id: "cnt_001", experimentId: "exp_001", variantRole: "control", body: "a", contentDna: {}, claimIdsUsed: ["clm_ok"], status: "pending_approval" },
+      data: { id: "cnt_001", experimentId: "exp_001", variantRole: "control", body: "a", contentDna: validDna(), claimIdsUsed: ["clm_ok"], status: "pending_approval" },
     });
   });
 
