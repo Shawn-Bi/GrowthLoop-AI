@@ -138,7 +138,7 @@ it("rejects unsupported dimensions and records missing fields rather than substi
 });
 it.each(["pending", "revoked", "rejected"])("Content boundary rejects %s claims", (status) => {
   // The resolver used by receiveContentHandoff rejects all statuses except approved.
-  const h = { schema_version: "1.0", task_id: "t", correlation_id: "c", idempotency_key: "k", experiment_id: "e", parent_experiment_id: null,
+  const h = { schema_version: "1.1", task_id: "t", correlation_id: "c", idempotency_key: "k", experiment_id: "e", parent_experiment_id: null,
     source_content_ids: [], approved_claim_ids: ["clm_ok"], hypothesis: "h", primary_test_variable: "hook", control_conditions: ["fixed"],
     metric_ids: [], findings: [], uncertainty: "simulated", approval_state: "approved", next_action: "generate_content_drafts" };
   expect(() => receiveContentHandoff(h, input.brief, [{ id: "clm_ok", text: "GrantReady is hypothetical.", status: status as "pending" | "revoked" | "rejected" }], undefined, () => {})).toThrow("not approved");
@@ -178,7 +178,7 @@ it("rejects an approved next-cycle change after its claim was revoked", async ()
   expect(await getDb().db.handoff.count()).toBe(0);
 });
 it.each(["needs_human_approval", "rejected"])("rejects a %s handoff at the Content boundary", (approval_state) => {
-  const h = { schema_version: "1.0", task_id: "t", correlation_id: "c", idempotency_key: "k", experiment_id: "e", parent_experiment_id: null,
+  const h = { schema_version: "1.1", task_id: "t", correlation_id: "c", idempotency_key: "k", experiment_id: "e", parent_experiment_id: null,
     source_content_ids: [], approved_claim_ids: ["clm_ok"], hypothesis: "h", primary_test_variable: "hook", control_conditions: ["fixed"],
     metric_ids: [], findings: [], uncertainty: "simulated", approval_state, next_action: "generate_content_drafts" };
   expect(() => receiveContentHandoff(h, input.brief, [{ id: "clm_ok", text: "GrantReady is hypothetical.", status: "approved" }], undefined, () => {})).toThrow("approved handoff");

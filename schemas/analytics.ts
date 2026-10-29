@@ -18,6 +18,14 @@ export const findingSchema = z.object({
 });
 export type Finding = z.infer<typeof findingSchema>;
 
+// The concrete edit for the next cycle: which analysed draft to keep as the
+// baseline, and the new text for the primary test variable.
+export const contentChangeSchema = z.object({
+  baseline_content_id: z.string().min(1),
+  variant_value: z.string().trim().min(1).max(4000),
+});
+export type ContentChange = z.infer<typeof contentChangeSchema>;
+
 // What the Analytics & Experiment Agent must return (PRD §3 step 7, §7).
 export const analyticsOutputSchema = z.object({
   summary: z.string().min(1),
@@ -25,7 +33,8 @@ export const analyticsOutputSchema = z.object({
   uncertainty: z.string().min(1),
   proposal: z.object({
     hypothesis: z.string().min(1),
-    content_change: z.object({ baseline_content_id: z.string().min(1), variant_value: z.string().trim().min(1).max(4000) }).optional(),
+    // Required: the next cycle can't start without a concrete change.
+    content_change: contentChangeSchema,
     primary_test_variable: testVariableSchema,
     // Every dimension the next drafts would change; must be exactly the
     // primary test variable for a one-variable experiment.

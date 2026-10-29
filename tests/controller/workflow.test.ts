@@ -213,6 +213,11 @@ describe("decideExperimentProposal", () => {
   });
 
   it("approval starts exp_002 with only approved or verified claims", async () => {
+    // The next cycle keeps the baseline draft's claims, minus unusable ones.
+    await testDb.db.contentDraft.update({
+      where: { id: "cnt_001" },
+      data: { claimIdsUsed: ["clm_001", "clm_002", "clm_003"] },
+    });
     const result = await decideExperimentProposal(
       testDb.db, "prop_exp_001_1", "approved", "experiment_approver", now
     );
