@@ -163,11 +163,11 @@ export async function decideProposalAndAdvance(
         },
       });
 
-      // Integrated drafts carry a validated brief; generate the child pair in this same transaction.
-      const source = await tx.contentDraft.findFirst({ where: { experimentId: parent.id } });
-      if (source && typeof source.contentDna === "object" && source.contentDna !== null && "schema_version" in source.contentDna) {
-        await generateContentInTransaction(tx, handoff.experiment_id);
-      }
+      // The child pair is always generated in this same transaction. If the
+      // baseline's Content DNA is missing, empty or invalid, generation throws
+      // and the whole approval rolls back, so no child experiment or handoff
+      // is ever left without its Cycle 2 drafts.
+      await generateContentInTransaction(tx, handoff.experiment_id);
       return { proposal, audit, handoff };
     });
   } catch (error) {
