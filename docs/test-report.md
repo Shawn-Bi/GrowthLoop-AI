@@ -68,6 +68,13 @@ This report records actual results only (PRD §10). Anything not run is marked a
     - The stored handoff is `schema_version: "1.1"`, with baseline `cnt_smoke_control`, so the inconclusive result kept the control.
   - **S2 read:** `GET /api/experiments/exp_smoke_002` returned 200, and the trace returned 200. This was not after a redeploy; the 2026-10-23 run covers persistence across a redeploy.
   - **Cleanup:** `smoke:deploy:cleanup` removed the `exp_smoke_*` rows.
+- **Re-run after the Cycle 2 generation fix (2026-10-29)** against the same preview at commit `fc9c552`:
+  - **The fix:** Michelle found that approval skipped Cycle 2 generation when the baseline's Content DNA lacked `schema_version`, and left a child experiment with no drafts. Generation is now mandatory: an invalid baseline returns 409, and the approval rolls back. The smoke test now seeds valid Content DNA and a `clm_smoke_demo` claim.
+  - **S4:** health returned 200, the API without the access code returned 401, and the page returned 307.
+  - **S2 write:** metrics returned 201. The real-Claude analysis returned 201 in 11.9 s, with 0 review flags. The decision with `outcome: "inconclusive"` returned 200.
+  - **S2 read:** `GET /api/experiments/exp_smoke_002` returned 200, with **both Cycle 2 drafts generated on the deployment** (control and variant, `pending_approval`). The trace returned 200.
+  - **Cleanup:** the `exp_smoke_*` rows and the `clm_smoke_*` claim were removed.
+  - **Not run on the preview:** the refused case (an invalid baseline gets 409 and nothing is committed). The integration tests cover it: `tests/integration/content-dna-validation.test.ts`.
 
 ## S3 / S5 — Secrets and access
 
