@@ -7,6 +7,7 @@ import { handoffSchema, type Handoff } from "@/schemas/handoff";
 import { receiveContentHandoff, traceHandoff, logContentTrace, type TraceSink } from "@/lib/content-agent/handoff";
 import { resolveApprovedClaims } from "@/lib/content-agent/claim-registry";
 import { buildNextCycleHandoff } from "./build-handoff";
+import { chooseBaseline } from "./cycle-rules";
 import { proposalFromRow } from "@/lib/persistence/proposals";
 import { ControllerError, TransitionError } from "./errors";
 
@@ -37,7 +38,9 @@ export async function generateContentInTransaction(db: Db, experimentId: string,
       throw new TransitionError("Human-approved proposal is required.", 409);
     }
     const sourceDrafts = await db.contentDraft.findMany({ where: { experimentId: experiment.parentExperimentId }, orderBy: { id: "asc" } });
+    // Rebuild with the baseline the approver's recorded outcome picked.
     const expected = buildNextCycleHandoff({ proposal: proposalFromRow(proposal),
+      baselineContentId: proposal.outcome ? chooseBaseline(proposal.outcome, sourceDrafts) : undefined,
       sourceContentIds: sourceDrafts.map((draft) => draft.id), approvedClaimIds: handoff.approved_claim_ids,
       nextExperimentId: experimentId, taskId: `task_${experimentId}`, correlationId: experiment.correlationId });
     if (!isDeepStrictEqual(handoff, expected) || proposal.experimentId !== experiment.parentExperimentId ||

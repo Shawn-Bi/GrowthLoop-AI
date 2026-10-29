@@ -24,13 +24,15 @@ describe("decideProposal", () => {
       pending,
       "approved",
       "experiment_approver",
-      now
+      now,
+      "variant_better"
     );
 
     expect(proposal).toMatchObject({
       status: "approved",
       decided_by_role: "experiment_approver",
       decided_at: "2026-10-23T15:00:00.000Z",
+      outcome: "variant_better",
     });
     expect(audit).toEqual({
       event_type: "approval_decision",
@@ -40,21 +42,32 @@ describe("decideProposal", () => {
       reviewer_role: "experiment_approver",
       from_status: "needs_human_approval",
       to_status: "approved",
+      outcome: "variant_better",
       occurred_at: "2026-10-23T15:00:00.000Z",
     });
     expect(auditEventSchema.safeParse(audit).success).toBe(true);
     expect(pending.status).toBe("needs_human_approval");
   });
 
-  it("rejects a pending proposal", () => {
-    const { proposal } = decideProposal(
+  it("rejects a pending proposal without recording an outcome", () => {
+    const { proposal, audit } = decideProposal(
       pendingProposal(),
       "rejected",
       "experiment_approver",
-      now
+      now,
+      "variant_better"
     );
 
-    expect(proposal.status).toBe("rejected");
+    expect(proposal).toMatchObject({ status: "rejected", outcome: null });
+    expect(audit).not.toHaveProperty("outcome");
+  });
+
+  it("refuses to approve without an outcome with 400", () => {
+    expect(() =>
+      decideProposal(pendingProposal(), "approved", "experiment_approver", now)
+    ).toThrow(
+      expect.objectContaining({ httpStatus: 400, message: expect.stringContaining("inconclusive") })
+    );
   });
 
   it("refuses decisions from the content reviewer role with 403", () => {
@@ -70,7 +83,8 @@ describe("decideProposal", () => {
       pendingProposal(),
       "approved",
       "experiment_approver",
-      now
+      now,
+      "inconclusive"
     );
 
     expectTransitionError(

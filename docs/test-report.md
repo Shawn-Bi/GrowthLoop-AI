@@ -2,21 +2,21 @@
 
 This report records actual results only (PRD §10). Anything not run is marked as such.
 
-**Last updated:** 2026-10-23, on branch `feature/gl-06-controller-api` (PR stack #3–#7), Node 24.15.0, Windows.
+**Last updated:** 2026-10-29, on branch `feature/cycle2-baseline-limit`. This branch stacks the integrated Content loop (#14), handoff v1.1 (#16) and the outcome/cycle-limit rules on top of #3–#12. Node 24.15.0, Windows. S2 and S4 were re-run on this branch's preview on 2026-10-29 (see the end of the Vercel section). S3 and S5 are from the 2026-10-23 runs.
 
 ## Summary
 
 | Check | Status | Evidence |
 |---|---|---|
-| S0 toolchain | ✅ Pass | `npm ci`, `npx prisma -v` (7.10.1), `npm run typecheck`, `npm run build` |
-| S1 Anthropic real API | ✅ Pass | `npm run smoke:anthropic` |
+| S0 toolchain | ✅ Pass | `npm ci`, `npx prisma -v` (7.10.1), `npm run typecheck`, `npm run build` (re-run 2026-10-29) |
+| S1 Anthropic real API | ✅ Pass | `npm run smoke:anthropic` (re-run 2026-10-29 with the #14 prompt and required `content_change`) |
 | S1b Content DNA schema | ⏳ Not run | Waits for the Content Agent (GL-07) |
 | S2 Neon persistence (local) | ✅ Pass | `npm run db:migrate`, `smoke:db:write` → new process → `smoke:db:read` → `smoke:db:cleanup` |
 | S2 Vercel preview | ✅ Pass | `smoke:deploy:write` → redeploy → `smoke:deploy:read` → `smoke:deploy:cleanup` |
 | S3 secrets and client boundary | ✅ Pass | Bundle scan, `.env.local` gitignored, smoke output scan |
 | S4 Vercel runtime | ✅ Pass | `npm run smoke:deploy`, `smoke:deploy:write` against the preview |
 | S5 access protection and daily cap | ✅ Pass (local) | Automated route tests, plus browser and HTTP checks against `next start` |
-| S6 no-cost unit tests | ✅ Pass | `npm test`: 129/129, with mocked Anthropic and PGlite |
+| S6 no-cost unit tests | ✅ Pass | `npm test`: 225/225 (2026-10-29), with mocked Anthropic and PGlite, including the two-cycle Content ↔ Analytics integration tests |
 
 ## S1 — Anthropic (real API)
 
@@ -28,6 +28,10 @@ This report records actual results only (PRD §10). Anything not run is marked a
   - The proposal was `needs_human_approval` with 0 errors.
 - **Finding and fix:** the first runs flagged 2 false positives. The model's own disclaimers ("not caused by the posts", "no statistical significance") were treated as causal wording. `reviewAnalysis` now ignores negated matches within the same clause. The re-run shows **0 review flags**, and new unit tests cover both negated and non-negated wording.
 - **Proposals vary between runs:** the same data produced `hook` in one run and `value_proposition` in another. The human approver decides.
+- **Re-run on 2026-10-29:** #14 added the `content_change` instruction to the prompt, and #16 made `content_change` required in the output schema.
+  - The output was schema-valid on the **first attempt**, with `stop_reason: end_turn`.
+  - Usage: 3,366 input and 2,080 output tokens, 18.2 s.
+  - The proposal was `needs_human_approval` with 0 review flags and 0 errors, and its primary test variable was `hook`.
 
 ## S2 — Neon PostgreSQL
 
@@ -55,6 +59,22 @@ This report records actual results only (PRD §10). Anything not run is marked a
 - **S2 write through the deployment:** seeding `exp_smoke_001`, loading metrics, analysing and approving created `exp_smoke_002` and its handoff in Neon through the deployed app.
 - **S2 read after a redeploy:** pushing `3ff27e1` produced a new deployment, `BCdwk…`; the write had run on `BARus…`. The redeployed app returned `exp_smoke_002`, its parent link and its handoff (200), and the trace `exp_smoke_001 → exp_smoke_002`.
 - **Cleanup:** `smoke:deploy:cleanup` removed the `exp_smoke_*` rows, and the preview now returns 404 for them. The run used one of the day's 30 generation slots.
+- **Re-run on 2026-10-29** against the `feature/cycle2-baseline-limit` preview (#17, commit `97afaa2`):
+  - **Migration:** Neon was migrated first with `npm run db:migrate`. `prisma migrate status` reports 2 migrations and "Database schema is up to date".
+  - **S4:** `/api/health` returned 200. `/api/experiments/*` without the access code returned the app's own 401, and `/experiments` returned 307.
+  - **S2 write:** metrics returned 201. The real-Claude analysis returned 201 in 17.0 s, with 0 review flags. The decision with `outcome: "inconclusive"` returned 200 and created `exp_smoke_002`.
+  - **Neon read-back:**
+    - The proposal is `approved` with outcome `inconclusive`, and the audit event has the same outcome.
+    - The stored handoff is `schema_version: "1.1"`, with baseline `cnt_smoke_control`, so the inconclusive result kept the control.
+  - **S2 read:** `GET /api/experiments/exp_smoke_002` returned 200, and the trace returned 200. This was not after a redeploy; the 2026-10-23 run covers persistence across a redeploy.
+  - **Cleanup:** `smoke:deploy:cleanup` removed the `exp_smoke_*` rows.
+- **Re-run after the Cycle 2 generation fix (2026-10-29)** against the same preview at commit `fc9c552`:
+  - **The fix:** Michelle found that approval skipped Cycle 2 generation when the baseline's Content DNA lacked `schema_version`, and left a child experiment with no drafts. Generation is now mandatory: an invalid baseline returns 409, and the approval rolls back. The smoke test now seeds valid Content DNA and a `clm_smoke_demo` claim.
+  - **S4:** health returned 200, the API without the access code returned 401, and the page returned 307.
+  - **S2 write:** metrics returned 201. The real-Claude analysis returned 201 in 11.9 s, with 0 review flags. The decision with `outcome: "inconclusive"` returned 200.
+  - **S2 read:** `GET /api/experiments/exp_smoke_002` returned 200, with **both Cycle 2 drafts generated on the deployment** (control and variant, `pending_approval`). The trace returned 200.
+  - **Cleanup:** the `exp_smoke_*` rows and the `clm_smoke_*` claim were removed.
+  - **Not run on the preview:** the refused case (an invalid baseline gets 409 and nothing is committed). The integration tests cover it: `tests/integration/content-dna-validation.test.ts`.
 
 ## S3 / S5 — Secrets and access
 
@@ -66,6 +86,6 @@ This report records actual results only (PRD §10). Anything not run is marked a
 
 ## Not yet covered
 
-- The two-cycle E2E with real Content Agent drafts (GL-10/GL-11).
-- KPI exact match against Michelle's `expected.json` (GL-03/GL-08).
-- A production deployment of this stack: `main` doesn't include it until #3–#7 merge.
+- **Two-cycle E2E with real Content Agent drafts and real Claude, on the Vercel preview (GL-10/GL-11).** The same flow passes in `tests/integration/*` over the production API handlers with PGlite, but there the Anthropic transport is stubbed.
+- **KPI exact match against Michelle's `expected.json` (GL-03/GL-08).** Her #15 test passed 38/38 against the #4 KPI code in a local check on 2026-10-29. It's recorded here once #15 is merged into #4.
+- **A production deployment of this stack.** `main` has #3 only; the rest reaches it as #4–#12 merge.

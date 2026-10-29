@@ -225,7 +225,7 @@ describe("decideExperimentProposal", () => {
       },
     });
     const result = await decideExperimentProposal(
-      testDb.db, "prop_exp_001_1", "approved", "experiment_approver", now
+      testDb.db, "prop_exp_001_1", "approved", "experiment_approver", now, "inconclusive"
     );
 
     expect(result.handoff).toMatchObject({

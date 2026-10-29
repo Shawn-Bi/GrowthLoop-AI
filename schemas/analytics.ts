@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { reviewerRoleSchema } from "./audit";
+import { proposalOutcomeSchema, reviewerRoleSchema } from "./audit";
 
 // Content DNA dimensions a proposal may change (PRD §6). ICP and channel are
 // fixed for the MVP, so they are not test variables.
@@ -66,5 +66,7 @@ export const proposalRecordSchema = z.object({
   review_flags: z.array(z.string()),
   decided_by_role: reviewerRoleSchema.nullable(),
   decided_at: z.iso.datetime().nullable(),
+  // Set when approved.
+  outcome: proposalOutcomeSchema.nullable(),
 });
 export type ProposalRecord = z.infer<typeof proposalRecordSchema>;

@@ -71,7 +71,7 @@ it("runs the two-cycle API workflow with real Content code, Analytics parsing, S
   expect(sent.drafts.map((d: { content_id: string }) => d.content_id).sort()).toEqual(first.map((d) => d.id).sort());
   expect(sent.drafts[0].content_dna.primary_test_variable).toBe("hook");
   expect(await getDb().db.experiment.count()).toBe(1);
-  const decision = await decideProposalRoute(req("/api/proposals/prop_exp_001_1/decision", { decision: "approved", reviewer_role: "experiment_approver" }), proposal());
+  const decision = await decideProposalRoute(req("/api/proposals/prop_exp_001_1/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }), proposal());
   expect(decision.status, await decision.clone().text()).toBe(200);
   const result = await decision.json();
   const second = await getDb().db.contentDraft.findMany({ where: { experimentId: "exp_002" }, orderBy: { variantRole: "asc" } });
@@ -90,7 +90,7 @@ it("runs the two-cycle API workflow with real Content code, Analytics parsing, S
   expect(JSON.stringify(traces)).not.toContain("integration-test-code");
   mkdirSync("test-results", { recursive: true });
   writeFileSync("test-results/content-handoff-trace.json", JSON.stringify({ mode: "API handlers + real SQL + stubbed Anthropic transport", traces }, null, 2));
-  const again = await decideProposalRoute(req("/api/proposals/prop_exp_001_1/decision", { decision: "approved", reviewer_role: "experiment_approver" }), proposal());
+  const again = await decideProposalRoute(req("/api/proposals/prop_exp_001_1/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }), proposal());
   expect(again.status).toBe(409);
   expect(await getDb().db.contentDraft.count()).toBe(4);
   expect((await decideDraftRoute(req(`/api/drafts/${second[0].id}/decision`, { action: "mark_ready", reviewer_role: "content_reviewer" }), draft(second[0].id))).status).toBe(409);
@@ -115,7 +115,7 @@ it("does not advance pending/rejected proposals or the wrong reviewer role", asy
   expect((await generate(req("/drafts"), exp("exp_002"))).status).toBe(404);
   expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "content_reviewer" }), proposal())).status).toBe(403);
   expect((await decideProposalRoute(req("/decision", { decision: "rejected", reviewer_role: "experiment_approver" }), proposal())).status).toBe(200);
-  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver" }), proposal())).status).toBe(409);
+  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }), proposal())).status).toBe(409);
   expect(await getDb().db.experiment.count()).toBe(1);
 });
 it("rolls the entire approval back when the approved change cannot generate a valid pair", async () => {
@@ -124,7 +124,7 @@ it("rolls the entire approval back when the approved change cannot generate a va
   const analysis = validOutput();
   analysis.proposal.content_change = { baseline_content_id: "missing", variant_value: "New hook" };
   await getDb().db.analysisReport.update({ where: { id: row.id }, data: { analysis } });
-  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver" }), proposal())).status).toBe(409);
+  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }), proposal())).status).toBe(409);
   expect(await getDb().db.experiment.count()).toBe(1);
   expect(await getDb().db.handoff.count()).toBe(0);
   expect(await getDb().db.auditEvent.count({ where: { recordType: "experiment_proposal" } })).toBe(0);
@@ -167,13 +167,13 @@ it("prevents multi-variable proposals and rolls back approval", async () => {
   const analysis = validOutput();
   analysis.proposal.changed_dimensions = ["hook", "cta"];
   await getDb().db.analysisReport.update({ where: { id: row.id }, data: { analysis } });
-  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver" }), proposal())).status).toBe(409);
+  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }), proposal())).status).toBe(409);
   expect(await getDb().db.experiment.count()).toBe(1);
 });
 it("rejects an approved next-cycle change after its claim was revoked", async () => {
   await analyseFirst();
   await getDb().db.claim.update({ where: { id: "clm_ok" }, data: { status: "rejected_claim" } });
-  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver" }), proposal())).status).toBe(409);
+  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }), proposal())).status).toBe(409);
   expect(await getDb().db.experiment.count()).toBe(1);
   expect(await getDb().db.handoff.count()).toBe(0);
 });
@@ -226,7 +226,7 @@ it("completes both cycles over HTTP using the production API handlers", async ()
     output.proposal.content_change = { baseline_content_id: generated.drafts[0].content_id, variant_value: "A different community conversation starts here." };
     mocks.create.mockResolvedValue({ content: [{ type: "text", text: JSON.stringify(output) }], stop_reason: "end_turn", usage: { input_tokens: 100, output_tokens: 50 } });
     await post("/api/experiments/exp_001/analysis");
-    await post("/api/proposals/prop_exp_001_1/decision", { decision: "approved", reviewer_role: "experiment_approver" });
+    await post("/api/proposals/prop_exp_001_1/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" });
     const children = await getDb().db.contentDraft.findMany({ where: { experimentId: "exp_002" } });
     expect(children).toHaveLength(2);
     expect(children.every((child) => child.status === "pending_approval")).toBe(true);
@@ -264,7 +264,7 @@ it("serializes concurrent generation into one persisted pair", async () => {
 });
 it.each(["findings", "metric_ids", "primary_test_variable", "approval_state"])("rejects missing persisted %s without generating a child pair", async (field) => {
   await analyseFirst();
-  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver" }), proposal())).status).toBe(200);
+  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }), proposal())).status).toBe(200);
   await getDb().db.contentDraft.deleteMany({ where: { experimentId: "exp_002" } });
   const stored = await getDb().db.handoff.findUniqueOrThrow({ where: { experimentId: "exp_002" } });
   const payload = JSON.parse(JSON.stringify(stored.payload));
@@ -275,7 +275,7 @@ it.each(["findings", "metric_ids", "primary_test_variable", "approval_state"])("
 });
 it("rejects substituted metric IDs even when they belong to the parent", async () => {
   await analyseFirst();
-  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver" }), proposal())).status).toBe(200);
+  expect((await decideProposalRoute(req("/decision", { decision: "approved", reviewer_role: "experiment_approver", outcome: "inconclusive" }), proposal())).status).toBe(200);
   await getDb().db.contentDraft.deleteMany({ where: { experimentId: "exp_002" } });
   const stored = await getDb().db.handoff.findUniqueOrThrow({ where: { experimentId: "exp_002" } });
   const payload = JSON.parse(JSON.stringify(stored.payload));

@@ -18,6 +18,7 @@ export function proposalFromRow(row: AnalysisReport): ProposalRecord {
     review_flags: row.reviewFlags,
     decided_by_role: row.decidedByRole,
     decided_at: row.decidedAt?.toISOString() ?? null,
+    outcome: row.outcome,
   });
 }
 
@@ -35,6 +36,7 @@ export async function saveProposal(
       reviewFlags: proposal.review_flags,
       decidedByRole: proposal.decided_by_role,
       decidedAt: proposal.decided_at ? new Date(proposal.decided_at) : null,
+      outcome: proposal.outcome,
     },
   });
 }

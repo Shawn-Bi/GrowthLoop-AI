@@ -139,9 +139,27 @@ export function RunAnalysisButton({ experimentId }: { experimentId: string }) {
   );
 }
 
-export function ProposalDecision({ proposalId }: { proposalId: string }) {
+const OUTCOMES = [
+  { value: "control_better", label: "Control did better", note: "the control stays the baseline" },
+  { value: "variant_better", label: "Variant did better", note: "the variant becomes the baseline" },
+  { value: "inconclusive", label: "Inconclusive", note: "the control (previous baseline) stays" },
+] as const;
+type Outcome = (typeof OUTCOMES)[number]["value"];
+
+export function ProposalDecision({
+  proposalId,
+  primaryCalculable,
+  lastCycle,
+}: {
+  proposalId: string;
+  // Both variants have a calculated primary KPI; otherwise only inconclusive.
+  primaryCalculable: boolean;
+  // This experiment is the last cycle allowed, so approving can't advance.
+  lastCycle: { cycle: number; max: number } | null;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState<"approved" | "rejected" | null>(null);
+  const [outcome, setOutcome] = useState<Outcome | null>(primaryCalculable ? null : "inconclusive");
   const [error, setError] = useState("");
 
   async function decide(decision: "approved" | "rejected") {
@@ -150,6 +168,7 @@ export function ProposalDecision({ proposalId }: { proposalId: string }) {
     const response = await postJson(`/api/proposals/${proposalId}/decision`, {
       decision,
       reviewer_role: "experiment_approver",
+      ...(decision === "approved" && outcome ? { outcome } : {}),
     });
     setPending(null);
 
@@ -167,11 +186,41 @@ export function ProposalDecision({ proposalId }: { proposalId: string }) {
         Approving creates the next experiment and hands these findings to the
         Content Agent.
       </p>
+      {lastCycle ? (
+        <p className="rounded-lg bg-slate-900 p-3 text-slate-200">
+          This is cycle {lastCycle.cycle} of {lastCycle.max}, so the loop stops here.
+          Reject the proposal to close the review.
+        </p>
+      ) : (
+        <fieldset className="space-y-2">
+          <legend className="font-semibold">Your reading of this cycle (picks the next baseline)</legend>
+          {!primaryCalculable && (
+            <p className="text-sm text-amber-200">
+              The primary KPI isn&apos;t calculable for both variants, so only &quot;Inconclusive&quot; is allowed.
+            </p>
+          )}
+          {OUTCOMES.map((option) => (
+            <label key={option.value} className="flex items-center gap-2">
+              <input
+                type="radio"
+                name={`outcome-${proposalId}`}
+                value={option.value}
+                checked={outcome === option.value}
+                disabled={!primaryCalculable && option.value !== "inconclusive"}
+                onChange={() => setOutcome(option.value)}
+              />
+              <span>
+                {option.label} <span className="text-sm text-slate-400">({option.note})</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      )}
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
           onClick={() => decide("approved")}
-          disabled={pending !== null}
+          disabled={pending !== null || outcome === null || lastCycle !== null}
           className="rounded-lg bg-emerald-500 px-5 py-3 font-bold text-slate-950 hover:bg-emerald-400 disabled:opacity-40"
         >
           {pending === "approved" ? "Approving…" : "Approve proposal"}
