@@ -4,6 +4,7 @@ import { toProposalRecord } from "@/lib/agents/analytics/proposal";
 import type { AnalyticsRunResult } from "@/lib/agents/analytics/run";
 import { buildMetricRecords } from "@/lib/kpi/calculate";
 import { ingestFixture, type QuarantinedRow } from "@/lib/kpi/ingest";
+import { loadUsableClaimIds } from "@/lib/persistence/claims";
 import {
   decideProposalAndAdvance,
   type DecisionResult,
@@ -215,15 +216,10 @@ export async function decideExperimentProposal(
   let next: { experimentId: string; taskId: string; approvedClaimIds: string[] } | undefined;
   if (decision === "approved") {
     const experimentId = nextSequentialId(proposal.experiment_id);
-    const claims = await db.claim.findMany({
-      where: { status: { in: ["approved_demo_claim", "verified_claim"] } },
-      select: { id: true },
-      orderBy: { id: "asc" },
-    });
     next = {
       experimentId,
       taskId: `task_${experimentId}`,
-      approvedClaimIds: claims.map((claim) => claim.id),
+      approvedClaimIds: await loadUsableClaimIds(db),
     };
   }
 
