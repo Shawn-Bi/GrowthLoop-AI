@@ -27,3 +27,8 @@ export function validDna(overrides: Partial<ContentDna> = {}): ContentDna {
     ...overrides,
   };
 }
+
+// The post a generated draft would show for this DNA.
+export function bodyFor(dna: ContentDna): string {
+  return ["Hypothetical product — demonstration only", dna.hook, dna.pain_point, dna.value_proposition, dna.evidence, dna.cta].join("\n\n");
+}

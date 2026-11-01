@@ -12,7 +12,7 @@ import { createRootExperiment } from "@/lib/persistence/experiments";
 import { validOutput } from "../analytics/fixtures";
 import { drafts } from "../kpi/fixtures";
 import { setupTestDb, type TestDb } from "../persistence/db";
-import { validDna } from "../persistence/dna";
+import { bodyFor, validDna } from "../persistence/dna";
 import { SEED_CLAIM_TEXT } from "../persistence/seed";
 
 const mocks = vi.hoisted(() => ({
@@ -95,13 +95,20 @@ beforeEach(async () => {
     data: { id: "clm_001", registryVersion: "v1", text: SEED_CLAIM_TEXT, status: "approved_demo_claim", sourceOrEvidence: "Test-only demo claim", reviewer: "Michelle", reviewedAt: new Date("2026-10-21"), demoOnly: true },
   });
   for (const draft of drafts) {
+    const contentDna = validDna({
+      variant_role: draft.variant_role,
+      claim_ids_used: ["clm_001"],
+      hook: `Test ${draft.variant_role} hook`,
+      evidence: SEED_CLAIM_TEXT,
+      generation_context: { ...validDna().generation_context, correlation_id: "corr_001" },
+    });
     await testDb.db.contentDraft.create({
       data: {
         id: draft.content_id,
         experimentId: "exp_001",
         variantRole: draft.variant_role,
-        body: "post",
-        contentDna: validDna({ variant_role: draft.variant_role, claim_ids_used: ["clm_001"], hook: `Test ${draft.variant_role} hook`, evidence: SEED_CLAIM_TEXT }),
+        body: bodyFor(contentDna),
+        contentDna,
         claimIdsUsed: ["clm_001"],
         status: "approved",
       },

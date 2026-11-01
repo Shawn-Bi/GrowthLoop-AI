@@ -109,3 +109,53 @@ describe("baseline role", () => {
     await expectNotAdvanced();
   });
 });
+
+describe("DNA provenance", () => {
+  const wrongContext: [string, (dna: Dna) => void][] = [
+    ["experiment ID", (dna) => { dna.generation_context.experiment_id = "exp_999"; }],
+    ["correlation ID", (dna) => { dna.generation_context.correlation_id = "corr_other"; }],
+  ];
+
+  it.each(wrongContext)("refuses to approve a draft whose DNA has the wrong %s", async (_label, edit) => {
+    const [control] = await drafts();
+    await editDna(control.id, edit);
+
+    await expectRefused(await decide(control.id, "approve"), "different experiment or correlation chain");
+  });
+
+  it.each(wrongContext)("refuses a Cycle 2 baseline whose DNA has the wrong %s", async (_label, edit) => {
+    const [control] = await approveBoth();
+    await loadAndAnalyse();
+    await editDna(control.id, edit);
+
+    await expectRefused(await approveProposal(), "different experiment or correlation chain");
+    await expectNotAdvanced();
+  });
+});
+
+describe("DNA matches the reviewed post", () => {
+  const swapHook = (dna: Dna) => { dna.hook = "A hook the reviewer never saw."; };
+
+  it("refuses to approve a draft whose DNA describes a different post", async () => {
+    const [control] = await drafts();
+    await editDna(control.id, swapHook);
+
+    await expectRefused(await decide(control.id, "approve"), "doesn't match the reviewed post (hook)");
+  });
+
+  it("refuses to mark a draft ready once its DNA no longer matches the post", async () => {
+    const [control] = await approveBoth();
+    await editDna(control.id, swapHook);
+
+    await expectRefused(await decide(control.id, "mark_ready"), "doesn't match the reviewed post (hook)");
+  });
+
+  it("refuses a Cycle 2 baseline whose DNA doesn't match its post", async () => {
+    const [control] = await approveBoth();
+    await loadAndAnalyse();
+    await editDna(control.id, swapHook);
+
+    await expectRefused(await approveProposal(), "doesn't match the reviewed post (hook)");
+    await expectNotAdvanced();
+  });
+});

@@ -57,7 +57,7 @@ export async function generateContentInTransaction(db: Db, experimentId: string,
     }
     // A clear 409 rather than a schema exception, which would surface as a 500
     // when approval generates the next pair in the same transaction.
-    baseline = assertDraftIntegrity(source, "be the Cycle 2 baseline");
+    baseline = assertDraftIntegrity(source, experiment.correlationId, "be the Cycle 2 baseline");
     brief = baseline.brief;
     const metrics = await db.metricRecord.findMany({ where: { experimentId: experiment.parentExperimentId, id: { in: handoff.metric_ids } } });
     if (metrics.length !== new Set(handoff.metric_ids).size || handoff.findings.some((f) => f.metric_ids.some((id) => !handoff.metric_ids.includes(id)))) {

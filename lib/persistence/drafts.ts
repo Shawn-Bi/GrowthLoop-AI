@@ -63,7 +63,11 @@ export async function decideDraft(
           (!claim.demoOnly || !draft.body.includes("Hypothetical product — demonstration only"))))) {
         throw new TransitionError("Draft claim text or demo label no longer matches the registry.", 409);
       }
-      assertDraftIntegrity(draft, input.action === "approve" ? "be approved" : "be marked ready");
+      const { correlationId } = await tx.experiment.findUniqueOrThrow({
+        where: { id: draft.experimentId },
+        select: { correlationId: true },
+      });
+      assertDraftIntegrity(draft, correlationId, input.action === "approve" ? "be approved" : "be marked ready");
     }
     const updated = await tx.contentDraft.updateMany({
       where: { id: draft.id, status: { in: transition.from } },

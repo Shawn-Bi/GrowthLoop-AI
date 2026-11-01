@@ -4,7 +4,7 @@ import { createCycleOneExperiment } from "@/lib/controller/workflow";
 import { decideDraft } from "@/lib/persistence/drafts";
 import { seedClaimRegistry } from "@/lib/persistence/claims";
 import { setupTestDb, type TestDb } from "./db";
-import { validDna } from "./dna";
+import { bodyFor, validDna } from "./dna";
 
 const now = new Date("2026-10-24T09:00:00.000Z");
 
@@ -32,7 +32,7 @@ beforeEach(async () => {
   await createCycleOneExperiment(testDb.db, { hypothesis: "h", primaryTestVariable: "hook" });
   await testDb.db.contentDraft.createMany({
     data: [
-      { id: "cnt_001", experimentId: "exp_001", variantRole: "control", body: "Hypothetical product — demonstration only\n\nok", contentDna: validDna(), claimIdsUsed: ["clm_ok"], status: "pending_approval" },
+      { id: "cnt_001", experimentId: "exp_001", variantRole: "control", body: bodyFor(validDna()), contentDna: validDna(), claimIdsUsed: ["clm_ok"], status: "pending_approval" },
       { id: "cnt_002", experimentId: "exp_001", variantRole: "variant", body: "b", contentDna: validDna({ variant_role: "variant", claim_ids_used: ["clm_ok", "clm_bad"] }), claimIdsUsed: ["clm_ok", "clm_bad"], status: "needs_review" },
     ],
   });

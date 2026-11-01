@@ -5,7 +5,7 @@ import { saveMetricRecords } from "@/lib/persistence/metrics";
 import { saveProposal } from "@/lib/persistence/proposals";
 import { metrics, validOutput } from "../analytics/fixtures";
 import { drafts } from "../kpi/fixtures";
-import { validDna } from "./dna";
+import { bodyFor, validDna } from "./dna";
 
 // The test-only claim the seeded drafts use (not Michelle's GrantReady copy).
 export const SEED_CLAIM_TEXT = "GrantReady is a hypothetical product.";
@@ -34,19 +34,20 @@ export async function seedCycle1(db: PrismaClient): Promise<void> {
   });
 
   for (const draft of drafts) {
+    const contentDna = validDna({
+      variant_role: draft.variant_role,
+      claim_ids_used: ["clm_001"],
+      hook: `Test ${draft.variant_role} hook`,
+      evidence: SEED_CLAIM_TEXT,
+      generation_context: { ...validDna().generation_context, correlation_id: "corr_001" },
+    });
     await db.contentDraft.create({
       data: {
         id: draft.content_id,
         experimentId: draft.experiment_id,
         variantRole: draft.variant_role,
-        body: `Test ${draft.variant_role} post`,
-        contentDna: validDna({
-          variant_role: draft.variant_role,
-          claim_ids_used: ["clm_001"],
-          hook: `Test ${draft.variant_role} hook`,
-          evidence: SEED_CLAIM_TEXT,
-          generation_context: { ...validDna().generation_context, correlation_id: "corr_001" },
-        }),
+        body: bodyFor(contentDna),
+        contentDna,
         claimIdsUsed: ["clm_001"],
         status: "approved",
       },

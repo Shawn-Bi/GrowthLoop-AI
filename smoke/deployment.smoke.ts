@@ -1,7 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
-import { validDna } from "../tests/persistence/dna";
+import { bodyFor, validDna } from "../tests/persistence/dna";
 
 // S4 and S2 (preview) against a running deployment: health and access
 // protection, then a real analytics round trip written through the deployed
@@ -131,20 +131,21 @@ describe("Deployment smoke", () => {
         },
       });
       for (const role of ["control", "variant"] as const) {
+        const contentDna = validDna({
+          variant_role: role,
+          claim_ids_used: [CLAIM],
+          hook: role === "control" ? "Missed a grant deadline?" : "Grant deadlines cost nonprofits funding.",
+          value_proposition: `One place to track grant deadlines. ${CLAIM_TEXT}`,
+          evidence: CLAIM_TEXT,
+          generation_context: { ...validDna().generation_context, correlation_id: "corr_smoke", experiment_id: ROOT },
+        });
         await db.contentDraft.create({
           data: {
             id: `cnt_smoke_${role}`,
             experimentId: ROOT,
             variantRole: role,
-            body: `Smoke-test ${role} draft. Hypothetical product — demonstration only. ${CLAIM_TEXT}`,
-            contentDna: validDna({
-              variant_role: role,
-              claim_ids_used: [CLAIM],
-              hook: role === "control" ? "Missed a grant deadline?" : "Grant deadlines cost nonprofits funding.",
-              value_proposition: `One place to track grant deadlines. ${CLAIM_TEXT}`,
-              evidence: CLAIM_TEXT,
-              generation_context: { ...validDna().generation_context, correlation_id: "corr_smoke", experiment_id: ROOT },
-            }),
+            body: bodyFor(contentDna),
+            contentDna,
             claimIdsUsed: [CLAIM],
             status: "approved",
           },
