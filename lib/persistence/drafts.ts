@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { planDraftTransition } from "@/lib/controller/draft-approval";
-import { assertDraftIntegrity } from "@/lib/controller/draft-integrity";
+import { assertClaimRowsValid, assertDraftIntegrity } from "@/lib/controller/draft-integrity";
 import { TransitionError } from "@/lib/controller/errors";
 import type { AuditEvent, ReviewerRole } from "@/schemas/audit";
 import type { DraftAction, DraftStatus } from "@/schemas/drafts";
@@ -59,6 +59,7 @@ export async function decideDraft(
 
     if (input.action === "approve" || input.action === "mark_ready") {
       const claims = await tx.claim.findMany({ where: { id: { in: draft.claimIdsUsed } } });
+      assertClaimRowsValid(claims);
       if (claims.some((claim) => !draft.body.includes(claim.text) || (claim.status === "approved_demo_claim" &&
           (!claim.demoOnly || !draft.body.includes("Hypothetical product — demonstration only"))))) {
         throw new TransitionError("Draft claim text or demo label no longer matches the registry.", 409);

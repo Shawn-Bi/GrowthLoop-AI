@@ -133,6 +133,40 @@ describe("DNA provenance", () => {
   });
 });
 
+describe("claim registry metadata", () => {
+  const blankEvidence = () => db().claim.update({ where: { id: "clm_ok" }, data: { sourceOrEvidence: "" } });
+
+  it("refuses to approve a draft whose claim evidence was blanked", async () => {
+    const [control] = await drafts();
+    await blankEvidence();
+
+    await expectRefused(await decide(control.id, "approve"), "Claim clm_ok has invalid registry metadata (source_or_evidence)");
+  });
+
+  it("refuses to mark a draft ready once its claim reviewer was blanked", async () => {
+    const [control] = await approveBoth();
+    await db().claim.update({ where: { id: "clm_ok" }, data: { reviewer: "" } });
+
+    await expectRefused(await decide(control.id, "mark_ready"), "Claim clm_ok has invalid registry metadata (reviewer)");
+  });
+
+  it("refuses to approve a draft whose verified claim text was blanked", async () => {
+    const [control] = await drafts();
+    await db().claim.update({ where: { id: "clm_ok" }, data: { text: "", status: "verified_claim", demoOnly: false } });
+
+    await expectRefused(await decide(control.id, "approve"), "Claim clm_ok has invalid registry metadata (text)");
+  });
+
+  it("refuses to advance with corrupted claim metadata, with a 409 rather than a 500", async () => {
+    await approveBoth();
+    await loadAndAnalyse();
+    await blankEvidence();
+
+    await expectRefused(await approveProposal(), "Claim clm_ok has invalid registry metadata");
+    await expectNotAdvanced();
+  });
+});
+
 describe("DNA matches the reviewed post", () => {
   const swapHook = (dna: Dna) => { dna.hook = "A hook the reviewer never saw."; };
 

@@ -1,4 +1,5 @@
 import { testVariableSchema } from "@/schemas/analytics";
+import { claimSchema } from "@/schemas/claims";
 import { contentDnaSchema, type ContentDna } from "@/schemas/content";
 import { TransitionError } from "./errors";
 
@@ -10,6 +11,37 @@ type StoredDraft = {
   claimIdsUsed: string[];
   contentDna: unknown;
 };
+
+type ClaimRow = {
+  id: string;
+  text: string;
+  status: string;
+  sourceOrEvidence: string;
+  reviewer: string;
+  reviewedAt: Date;
+  demoOnly: boolean;
+};
+
+// Claim rows are validated when the registry is seeded. Generation, approve
+// and mark_ready re-check them, so a claim whose text, evidence or reviewer
+// was blanked or corrupted afterwards can't support a draft.
+export function assertClaimRowsValid(rows: ClaimRow[]): void {
+  for (const row of rows) {
+    const parsed = claimSchema.safeParse({
+      claim_id: row.id,
+      text: row.text,
+      status: row.status,
+      source_or_evidence: row.sourceOrEvidence,
+      reviewer: row.reviewer,
+      reviewed_at: row.reviewedAt.toISOString(),
+      demo_only: row.demoOnly,
+    });
+    if (!parsed.success) {
+      const fields = [...new Set(parsed.error.issues.map((issue) => issue.path.join(".") || "(whole record)"))];
+      throw new TransitionError(`Claim ${row.id} has invalid registry metadata (${fields.join(", ")}).`, 409);
+    }
+  }
+}
 
 // Content DNA is validated when the controller saves a generated draft. Each
 // later step that relies on a stored draft checks it again, so a malformed
