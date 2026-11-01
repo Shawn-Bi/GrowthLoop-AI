@@ -184,3 +184,15 @@ model DailyGenerationQuota {
 
   @@map("daily_generation_quota")
 }
+
+// Sign-in attempts per client per fixed window, so the shared access code
+// can't be brute-forced. Stores a hash of the client address, never the IP.
+model AccessAttemptWindow {
+  clientHash  String   @map("client_hash")
+  windowStart DateTime @map("window_start")
+  attempts    Int
+
+  @@id([clientHash, windowStart])
+  @@index([windowStart])
+  @@map("access_attempt_window")
+}

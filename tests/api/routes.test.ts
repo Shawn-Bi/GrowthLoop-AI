@@ -299,3 +299,58 @@ describe("request validation and errors", () => {
     );
   });
 });
+
+describe("sign-in attempt limit", () => {
+  const from = (ip: string, extra: Record<string, string> = {}) => ({
+    "x-forwarded-for": ip,
+    ...extra,
+  });
+
+  async function failTenTimes(ip: string) {
+    for (let i = 0; i < 10; i++) {
+      const response = await login(req("POST", "/api/access", { code: "nope" }, from(ip)));
+      expect(response.status).toBe(401);
+    }
+  }
+
+  it("returns 429 with Retry-After after 10 wrong codes, even for the right one", async () => {
+    await failTenTimes("203.0.113.7");
+
+    const blocked = await login(req("POST", "/api/access", { code: "test-code" }, from("203.0.113.7")));
+
+    expect(blocked.status).toBe(429);
+    expect(Number(blocked.headers.get("retry-after"))).toBeGreaterThan(0);
+    expect(blocked.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("doesn't block other clients", async () => {
+    await failTenTimes("203.0.113.7");
+
+    const other = await login(req("POST", "/api/access", { code: "test-code" }, from("198.51.100.2")));
+    expect(other.status).toBe(200);
+  });
+
+  it("doesn't count successful sign-ins", async () => {
+    for (let i = 0; i < 12; i++) {
+      const response = await login(req("POST", "/api/access", { code: "test-code" }, from("203.0.113.7")));
+      expect(response.status).toBe(200);
+    }
+  });
+
+  it("limits bearer-code guesses on API routes too", async () => {
+    for (let i = 0; i < 10; i++) {
+      const response = await getExperiment(
+        req("GET", "/api/experiments/exp_001", undefined, from("203.0.113.7", { authorization: "Bearer nope" })),
+        exp1
+      );
+      expect(response.status).toBe(401);
+    }
+
+    const blocked = await getExperiment(
+      req("GET", "/api/experiments/exp_001", undefined, from("203.0.113.7", AUTH)),
+      exp1
+    );
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("retry-after")).not.toBeNull();
+  });
+});

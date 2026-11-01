@@ -48,22 +48,26 @@ export function isValidSessionToken(token: string | undefined): boolean {
   return code !== null && token !== undefined && safeEqual(token, sessionToken(code));
 }
 
-// Browsers send the session cookie; test and E2E scripts may send
-// `Authorization: Bearer <access code>` instead. Fails closed when no code
-// is configured.
-export function isAuthorizedRequest(request: {
-  headers: Headers;
+type CookieRequest = {
   cookies: { get(name: string): { value: string } | undefined };
-}): boolean {
-  const bearer = request.headers
-    .get("authorization")
-    ?.match(/^Bearer (.+)$/)?.[1];
+};
 
-  if (bearer !== undefined) {
-    return checkAccessCode(bearer);
-  }
-
+export function hasValidSession(request: CookieRequest): boolean {
   return isValidSessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+}
+
+// Test and E2E scripts send `Authorization: Bearer <access code>` instead of
+// the cookie. Route handlers check it against the attempt limit
+// (lib/auth/verify.ts); pages never accept it.
+export function bearerCode(headers: Headers): string | undefined {
+  return headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
+}
+
+// Vercel sets x-forwarded-for and x-real-ip itself, so clients can't spoof
+// them there. Locally they may be missing.
+export function clientAddress(headers: Headers): string {
+  const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || headers.get("x-real-ip") || "unknown";
 }
 
 export function sessionCookieOptions() {

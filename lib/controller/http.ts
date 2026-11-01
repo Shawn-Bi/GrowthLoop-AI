@@ -1,6 +1,9 @@
 import type { NextRequest } from "next/server";
 import type { ZodType } from "zod";
-import { isAuthorizedRequest } from "@/lib/auth/access";
+import { bearerCode, hasValidSession } from "@/lib/auth/access";
+import { verifyAccessCode } from "@/lib/auth/verify";
+import { getDb } from "@/lib/db";
+import { TooManyAttemptsError } from "@/lib/persistence/access-attempts";
 import { ControllerError } from "./errors";
 
 export async function readJson<T>(
@@ -25,31 +28,48 @@ export async function readJson<T>(
   return result.data;
 }
 
-// Every API route goes through here: access is checked again next to the
-// data (not only in the proxy), expected failures keep their status, and
-// unexpected ones are logged by class only so no secrets reach the logs.
+// Expected failures keep their status (429 adds Retry-After); unexpected
+// ones are logged by class only so no secrets reach the logs.
+export function errorResponse(error: unknown, request: NextRequest): Response {
+  if (error instanceof ControllerError) {
+    const headers =
+      error instanceof TooManyAttemptsError
+        ? { "Retry-After": String(error.retryAfterSeconds) }
+        : undefined;
+    return Response.json(
+      { error: error.message },
+      { status: error.httpStatus, headers }
+    );
+  }
+
+  const kind = error instanceof Error ? error.name : typeof error;
+  console.error(
+    `Unhandled ${kind} in ${request.method} ${request.nextUrl.pathname}`
+  );
+  return Response.json({ error: "Internal error." }, { status: 500 });
+}
+
+async function isAuthorized(request: NextRequest): Promise<boolean> {
+  const code = bearerCode(request.headers);
+
+  if (code === undefined) {
+    return hasValidSession(request);
+  }
+  return verifyAccessCode(getDb(), code, request.headers, new Date());
+}
+
+// Every API route goes through here, so access is checked again next to the
+// data rather than only in the proxy.
 export async function handleRoute(
   request: NextRequest,
   handler: () => Promise<Response>
 ): Promise<Response> {
-  if (!isAuthorizedRequest(request)) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
   try {
+    if (!(await isAuthorized(request))) {
+      return Response.json({ error: "Unauthorized." }, { status: 401 });
+    }
     return await handler();
   } catch (error) {
-    if (error instanceof ControllerError) {
-      return Response.json(
-        { error: error.message },
-        { status: error.httpStatus }
-      );
-    }
-
-    const kind = error instanceof Error ? error.name : typeof error;
-    console.error(
-      `Unhandled ${kind} in ${request.method} ${request.nextUrl.pathname}`
-    );
-    return Response.json({ error: "Internal error." }, { status: 500 });
+    return errorResponse(error, request);
   }
 }
