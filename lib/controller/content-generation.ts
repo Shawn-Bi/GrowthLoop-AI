@@ -2,12 +2,13 @@ import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { z } from "zod";
 import { claimSchema } from "@/schemas/claims";
-import { contentDnaSchema, contentRequestSchema } from "@/schemas/content";
+import { contentRequestSchema } from "@/schemas/content";
 import { handoffSchema, type Handoff } from "@/schemas/handoff";
 import { receiveContentHandoff, traceHandoff, logContentTrace, type TraceSink } from "@/lib/content-agent/handoff";
 import { resolveApprovedClaims } from "@/lib/content-agent/claim-registry";
 import { buildNextCycleHandoff } from "./build-handoff";
 import { chooseBaseline } from "./cycle-rules";
+import { assertDraftIntegrity } from "./draft-integrity";
 import { proposalFromRow } from "@/lib/persistence/proposals";
 import { ControllerError, TransitionError } from "./errors";
 
@@ -56,12 +57,7 @@ export async function generateContentInTransaction(db: Db, experimentId: string,
     }
     // A clear 409 rather than a schema exception, which would surface as a 500
     // when approval generates the next pair in the same transaction.
-    const parsedBaseline = contentDnaSchema.safeParse(source.contentDna);
-    if (!parsedBaseline.success) {
-      const fields = [...new Set(parsedBaseline.error.issues.map((issue) => issue.path.join(".") || "(whole record)"))];
-      throw new TransitionError(`Baseline draft ${source.id} has invalid Content DNA (${fields.join(", ")}).`, 409);
-    }
-    baseline = parsedBaseline.data;
+    baseline = assertDraftIntegrity(source, "be the Cycle 2 baseline");
     brief = baseline.brief;
     const metrics = await db.metricRecord.findMany({ where: { experimentId: experiment.parentExperimentId, id: { in: handoff.metric_ids } } });
     if (metrics.length !== new Set(handoff.metric_ids).size || handoff.findings.some((f) => f.metric_ids.some((id) => !handoff.metric_ids.includes(id)))) {

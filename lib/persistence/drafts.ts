@@ -1,8 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { planDraftTransition } from "@/lib/controller/draft-approval";
+import { assertDraftIntegrity } from "@/lib/controller/draft-integrity";
 import { TransitionError } from "@/lib/controller/errors";
 import type { AuditEvent, ReviewerRole } from "@/schemas/audit";
-import { contentDnaSchema } from "@/schemas/content";
 import type { DraftAction, DraftStatus } from "@/schemas/drafts";
 import { loadUsableClaimIds } from "./claims";
 
@@ -17,34 +17,6 @@ export type DraftDecisionResult = {
   draft: { content_id: string; experiment_id: string; status: DraftStatus };
   audit: AuditEvent;
 };
-
-// Content DNA is validated when the controller saves a generated draft. It's
-// checked again before a human approves or marks it ready, so a malformed
-// or edited record can't advance (PR #12). The DNA must also agree with the
-// draft's own role and claim IDs.
-function assertValidContentDna(
-  draft: { id: string; variantRole: string; claimIdsUsed: string[]; contentDna: unknown },
-  action: DraftAction
-): void {
-  const verb = action === "approve" ? "approved" : "marked ready";
-  const dna = contentDnaSchema.safeParse(draft.contentDna);
-  if (!dna.success) {
-    const fields = [...new Set(dna.error.issues.map((issue) => issue.path.join(".") || "(whole record)"))];
-    throw new TransitionError(
-      `Draft ${draft.id} has invalid Content DNA (${fields.join(", ")}), so it can't be ${verb}.`,
-      409
-    );
-  }
-  const sameClaims =
-    dna.data.claim_ids_used.length === draft.claimIdsUsed.length &&
-    dna.data.claim_ids_used.every((id) => draft.claimIdsUsed.includes(id));
-  if (dna.data.variant_role !== draft.variantRole || !sameClaims) {
-    throw new TransitionError(
-      `Draft ${draft.id}'s Content DNA doesn't match its variant role or claim IDs, so it can't be ${verb}.`,
-      409
-    );
-  }
-}
 
 // Applies a human decision to a content draft in one transaction: the
 // transition table, claim and Content DNA checks on approve and mark_ready,
@@ -91,7 +63,7 @@ export async function decideDraft(
           (!claim.demoOnly || !draft.body.includes("Hypothetical product — demonstration only"))))) {
         throw new TransitionError("Draft claim text or demo label no longer matches the registry.", 409);
       }
-      assertValidContentDna(draft, input.action);
+      assertDraftIntegrity(draft, input.action === "approve" ? "be approved" : "be marked ready");
     }
     const updated = await tx.contentDraft.updateMany({
       where: { id: draft.id, status: { in: transition.from } },
