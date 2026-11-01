@@ -7,6 +7,7 @@ import { POST as analyse } from "@/app/api/experiments/[experimentId]/analysis/r
 import { POST as decideProposalRoute } from "@/app/api/proposals/[proposalId]/decision/route";
 import { ingestExperimentMetrics } from "@/lib/controller/workflow";
 import type { AnalyticsOutput } from "@/schemas/analytics";
+import { handoffSchema } from "@/schemas/handoff";
 import { setupTestDb } from "../persistence/db";
 import { controlRow, variantRow } from "../kpi/fixtures";
 import { validOutput } from "../analytics/fixtures";
@@ -220,6 +221,69 @@ describe("approval re-review", () => {
 
   it("still approves an unchanged proposal", async () => {
     expect((await approveProposal()).status).toBe(200);
+  });
+});
+
+describe("analysis gate", () => {
+  beforeEach(async () => { await approveBoth(); });
+  const expectAnalysisRefused = async (message: string) => {
+    await expectRefused(await loadAndAnalyse(), message);
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(await db().analysisReport.count()).toBe(0);
+  };
+
+  it("refuses analysis when a draft's claim was rejected after approval", async () => {
+    await db().claim.update({ where: { id: "clm_ok" }, data: { status: "rejected_claim" } });
+
+    await expectAnalysisRefused("uses claims that aren't approved: clm_ok");
+  });
+
+  it("refuses analysis when a draft's claim no longer exists", async () => {
+    await db().claim.delete({ where: { id: "clm_two" } });
+
+    await expectAnalysisRefused("uses claims that aren't approved: clm_two");
+  });
+
+  it("refuses analysis when a draft's approval was revoked", async () => {
+    const [control] = await drafts();
+    await db().contentDraft.update({ where: { id: control.id }, data: { status: "rejected" } });
+
+    await expectAnalysisRefused("two human-approved experiment drafts");
+  });
+
+  it.each<[string, (dna: Dna) => void, string]>([
+    ["is empty", (dna) => { for (const key of Object.keys(dna)) delete dna[key]; }, "schema_version"],
+    ["is missing a dimension", (dna) => { delete dna.hook; }, "hook"],
+    ["has the wrong version", (dna) => { dna.schema_version = "9.9"; }, "schema_version"],
+  ])("refuses analysis when a draft's Content DNA %s", async (_label, edit, field) => {
+    const [control] = await drafts();
+    await editDna(control.id, edit);
+
+    await expectAnalysisRefused(field);
+  });
+
+  it.each<[string, unknown]>([
+    ["a scalar", "not an object"],
+    ["an array", ["not", "an", "object"]],
+  ])("refuses analysis when a draft's Content DNA is %s", async (_label, contentDna) => {
+    const [control] = await drafts();
+    await db().contentDraft.update({ where: { id: control.id }, data: { contentDna: contentDna as object } });
+
+    await expectAnalysisRefused("invalid Content DNA");
+  });
+});
+
+describe("handoff contract", () => {
+  it("rejects unknown fields instead of dropping them", () => {
+    const handoff = {
+      schema_version: "1.1", task_id: "t", correlation_id: "c", idempotency_key: "k", experiment_id: "exp_001",
+      parent_experiment_id: null, source_content_ids: [], approved_claim_ids: ["clm_ok"], hypothesis: "h",
+      primary_test_variable: "hook", control_conditions: ["fixed"], metric_ids: [], findings: [],
+      uncertainty: "simulated", approval_state: "approved", next_action: "generate_content_drafts",
+    };
+
+    expect(handoffSchema.safeParse(handoff).success).toBe(true);
+    expect(handoffSchema.safeParse({ ...handoff, messaging_angle: "new" }).success).toBe(false);
   });
 });
 

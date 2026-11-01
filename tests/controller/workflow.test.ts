@@ -57,15 +57,25 @@ beforeEach(async () => {
     hypothesis: "h",
     primaryTestVariable: "hook",
   });
+  await testDb.db.claim.create({
+    data: { id: "clm_wf", registryVersion: "v1", text: "Reviewed claim.", status: "verified_claim", sourceOrEvidence: "doc", reviewer: "Michelle", reviewedAt: now, demoOnly: false },
+  });
   for (const draft of drafts) {
+    const contentDna = validDna({
+      variant_role: draft.variant_role,
+      claim_ids_used: ["clm_wf"],
+      hook: `Test ${draft.variant_role} hook`,
+      evidence: "Reviewed claim.",
+      generation_context: { ...validDna().generation_context, correlation_id: "corr_001" },
+    });
     await testDb.db.contentDraft.create({
       data: {
         id: draft.content_id,
         experimentId: "exp_001",
         variantRole: draft.variant_role,
-        body: "post",
-        contentDna: { hook: draft.variant_role },
-        claimIdsUsed: [],
+        body: bodyFor(contentDna),
+        contentDna,
+        claimIdsUsed: ["clm_wf"],
         status: "approved",
       },
     });
@@ -151,8 +161,8 @@ describe("runExperimentAnalysis", () => {
       });
       expect(agent.mock.calls[0][0].metrics).toHaveLength(14);
       expect(agent.mock.calls[0][0].drafts).toEqual([
-        { content_id: "cnt_001", variant_role: "control", content_dna: { hook: "control" } },
-        { content_id: "cnt_002", variant_role: "variant", content_dna: { hook: "variant" } },
+        { content_id: "cnt_001", variant_role: "control", content_dna: expect.objectContaining({ hook: "Test control hook" }) },
+        { content_id: "cnt_002", variant_role: "variant", content_dna: expect.objectContaining({ hook: "Test variant hook" }) },
       ]);
       expect(await testDb.db.agentRun.count({ where: { status: "completed" } })).toBe(1);
       expect(await testDb.db.dailyGenerationQuota.findUnique({ where: { day: "2026-10-23" } }))
