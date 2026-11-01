@@ -6,6 +6,7 @@ import { POST as decideDraftRoute } from "@/app/api/drafts/[draftId]/decision/ro
 import { POST as analyse } from "@/app/api/experiments/[experimentId]/analysis/route";
 import { POST as decideProposalRoute } from "@/app/api/proposals/[proposalId]/decision/route";
 import { ingestExperimentMetrics } from "@/lib/controller/workflow";
+import type { AnalyticsOutput } from "@/schemas/analytics";
 import { setupTestDb } from "../persistence/db";
 import { controlRow, variantRow } from "../kpi/fixtures";
 import { validOutput } from "../analytics/fixtures";
@@ -164,6 +165,61 @@ describe("claim registry metadata", () => {
 
     await expectRefused(await approveProposal(), "Claim clm_ok has invalid registry metadata");
     await expectNotAdvanced();
+  });
+});
+
+describe("approval re-review", () => {
+  async function editAnalysis(edit: (analysis: AnalyticsOutput) => void) {
+    const row = await db().analysisReport.findUniqueOrThrow({ where: { id: "prop_exp_001_1" } });
+    const analysis = structuredClone(row.analysis) as AnalyticsOutput;
+    edit(analysis);
+    await db().analysisReport.update({ where: { id: row.id }, data: { analysis: analysis as object } });
+  }
+  async function editControlPrimary(edit: (record: Record<string, unknown>) => void) {
+    const row = await db().metricRecord.findFirstOrThrow({ where: { experimentId: "exp_001", metric: "qualified_demo_rate_per_visit", variantRole: "control" } });
+    const record = structuredClone(row.record) as Record<string, unknown>;
+    edit(record);
+    await db().metricRecord.update({ where: { id: row.id }, data: { record: record as object } });
+  }
+
+  beforeEach(async () => {
+    await approveBoth();
+    expect((await loadAndAnalyse()).status).toBe(201);
+  });
+
+  it("refuses a proposal whose finding numbers changed after review", async () => {
+    await editAnalysis((analysis) => { analysis.findings[0].statement = "Control: 99.0% qualified demo rate (999 of 1000 visits)."; });
+
+    await expectRefused(await approveProposal(), "changed after review");
+    await expectNotAdvanced();
+  });
+
+  it("refuses a proposal whose summary numbers changed after review", async () => {
+    await editAnalysis((analysis) => { analysis.summary = "The variant reached 99.9% in this simulated dataset."; });
+
+    await expectRefused(await approveProposal(), "changed after review");
+    await expectNotAdvanced();
+  });
+
+  it("refuses a proposal when a cited metric became not_calculable", async () => {
+    await editControlPrimary((record) => { record.status = "not_calculable"; record.value = null; record.not_calculable_reason = "Denominator is 0."; });
+
+    await expectRefused(await approveProposal(), "changed after review");
+    await expectNotAdvanced();
+  });
+
+  it.each([
+    ["experiment_id", "exp_999"],
+    ["content_id", "cnt_other"],
+  ])("refuses a metric whose stored %s disagrees with its row", async (field, value) => {
+    await editControlPrimary((record) => { record[field] = value; });
+
+    await expectRefused(await approveProposal(), "doesn't match its stored association");
+    await expectNotAdvanced();
+  });
+
+  it("still approves an unchanged proposal", async () => {
+    expect((await approveProposal()).status).toBe(200);
   });
 });
 
