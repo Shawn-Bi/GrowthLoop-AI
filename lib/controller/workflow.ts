@@ -26,6 +26,7 @@ import {
 import type { ProposalRecord, TestVariable } from "@/schemas/analytics";
 import type { Decision, ProposalOutcome, ReviewerRole } from "@/schemas/audit";
 import { chooseBaseline } from "./cycle-rules";
+import { assertDraftIntegrity } from "./draft-integrity";
 import { ControllerError, TransitionError } from "./errors";
 import { nextSequentialId } from "./ids";
 
@@ -139,7 +140,7 @@ export async function runExperimentAnalysis(
   experimentId: string,
   now: Date
 ): Promise<ProposalRecord> {
-  await requireOpenExperiment(db, experimentId);
+  const experiment = await requireOpenExperiment(db, experimentId);
 
   const pending = await db.analysisReport.findFirst({
     where: { experimentId, status: "needs_human_approval" },
@@ -168,6 +169,18 @@ export async function runExperimentAnalysis(
   if (drafts.length !== 2 || new Set(drafts.map((draft) => draft.variantRole)).size !== 2 ||
       drafts.some((draft) => !PUBLISHED_DRAFT_STATUSES.includes(draft.status as "approved" | "ready_for_manual_publication"))) {
     throw new TransitionError("Analysis requires two human-approved experiment drafts.", 409);
+  }
+  // Checked before the slot is reserved, so a refused analysis costs nothing.
+  const usable = new Set(await loadUsableClaimIds(db));
+  for (const draft of drafts) {
+    assertDraftIntegrity(draft, experiment.correlationId, "be analysed");
+    const unusable = draft.claimIdsUsed.filter((id) => !usable.has(id));
+    if (unusable.length > 0) {
+      throw new TransitionError(
+        `Draft ${draft.id} can't be analysed: it uses claims that aren't approved: ${unusable.join(", ")}.`,
+        409
+      );
+    }
   }
   const slot = await reserveGenerationSlot(db, now);
   let result: AnalyticsRunResult;

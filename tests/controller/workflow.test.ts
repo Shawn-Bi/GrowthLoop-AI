@@ -12,7 +12,7 @@ import { reserveGenerationSlot } from "@/lib/persistence/quota";
 import { validOutput } from "../analytics/fixtures";
 import { controlRow, drafts, variantRow } from "../kpi/fixtures";
 import { setupTestDb, type TestDb } from "../persistence/db";
-import { validDna } from "../persistence/dna";
+import { bodyFor, validDna } from "../persistence/dna";
 
 const now = new Date("2026-10-23T15:00:00.000Z");
 
@@ -57,15 +57,25 @@ beforeEach(async () => {
     hypothesis: "h",
     primaryTestVariable: "hook",
   });
+  await testDb.db.claim.create({
+    data: { id: "clm_wf", registryVersion: "v1", text: "Reviewed claim.", status: "verified_claim", sourceOrEvidence: "doc", reviewer: "Michelle", reviewedAt: now, demoOnly: false },
+  });
   for (const draft of drafts) {
+    const contentDna = validDna({
+      variant_role: draft.variant_role,
+      claim_ids_used: ["clm_wf"],
+      hook: `Test ${draft.variant_role} hook`,
+      evidence: "Reviewed claim.",
+      generation_context: { ...validDna().generation_context, correlation_id: "corr_001" },
+    });
     await testDb.db.contentDraft.create({
       data: {
         id: draft.content_id,
         experimentId: "exp_001",
         variantRole: draft.variant_role,
-        body: "post",
-        contentDna: { hook: draft.variant_role },
-        claimIdsUsed: [],
+        body: bodyFor(contentDna),
+        contentDna,
+        claimIdsUsed: ["clm_wf"],
         status: "approved",
       },
     });
@@ -151,8 +161,8 @@ describe("runExperimentAnalysis", () => {
       });
       expect(agent.mock.calls[0][0].metrics).toHaveLength(14);
       expect(agent.mock.calls[0][0].drafts).toEqual([
-        { content_id: "cnt_001", variant_role: "control", content_dna: { hook: "control" } },
-        { content_id: "cnt_002", variant_role: "variant", content_dna: { hook: "variant" } },
+        { content_id: "cnt_001", variant_role: "control", content_dna: expect.objectContaining({ hook: "Test control hook" }) },
+        { content_id: "cnt_002", variant_role: "variant", content_dna: expect.objectContaining({ hook: "Test variant hook" }) },
       ]);
       expect(await testDb.db.agentRun.count({ where: { status: "completed" } })).toBe(1);
       expect(await testDb.db.dailyGenerationQuota.findUnique({ where: { day: "2026-10-23" } }))
@@ -217,12 +227,14 @@ describe("decideExperimentProposal", () => {
     // The next cycle keeps the baseline draft's claims, and approval now
     // generates the Cycle 2 pair from its Content DNA, so the baseline needs
     // valid DNA that uses only usable claims (clm_003 is rejected).
+    const contentDna = validDna({
+      claim_ids_used: ["clm_001", "clm_002"],
+      evidence: "a b",
+      generation_context: { ...validDna().generation_context, correlation_id: "corr_001" },
+    });
     await testDb.db.contentDraft.update({
       where: { id: "cnt_001" },
-      data: {
-        claimIdsUsed: ["clm_001", "clm_002"],
-        contentDna: validDna({ claim_ids_used: ["clm_001", "clm_002"], evidence: "a b" }),
-      },
+      data: { claimIdsUsed: ["clm_001", "clm_002"], contentDna, body: bodyFor(contentDna) },
     });
     const result = await decideExperimentProposal(
       testDb.db, "prop_exp_001_1", "approved", "experiment_approver", now, "inconclusive"

@@ -7,9 +7,10 @@ const id = z.string().min(1);
 // parent; every later cycle must carry the parent experiment's evidence and
 // the approved content change. v1.1 (agreed on PR #13) makes content_change
 // required from Cycle 2; both the controller and the Content Agent parse
-// with this schema, so a v1.0 payload is rejected at either end.
+// with this schema, so a v1.0 payload is rejected at either end. Unknown
+// fields are rejected too, rather than silently dropped.
 export const handoffSchema = z
-  .object({
+  .strictObject({
     schema_version: z.literal("1.1"),
     task_id: id,
     correlation_id: id,

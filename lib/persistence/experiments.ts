@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { generateContentInTransaction } from "@/lib/controller/content-generation";
 import { buildNextCycleHandoff } from "@/lib/controller/build-handoff";
@@ -185,6 +186,11 @@ export async function decideProposalAndAdvance(
         "The next experiment or its handoff already exists.",
         409
       );
+    }
+    // Stored records that no longer pass their schema refuse the approval
+    // cleanly; the transaction has already rolled back.
+    if (error instanceof ZodError) {
+      throw new TransitionError("Stored experiment data failed validation, so nothing was changed.", 409);
     }
     throw error;
   }

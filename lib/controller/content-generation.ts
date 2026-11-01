@@ -1,13 +1,13 @@
 import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { z } from "zod";
-import { claimSchema } from "@/schemas/claims";
-import { contentDnaSchema, contentRequestSchema } from "@/schemas/content";
+import { contentRequestSchema } from "@/schemas/content";
 import { handoffSchema, type Handoff } from "@/schemas/handoff";
 import { receiveContentHandoff, traceHandoff, logContentTrace, type TraceSink } from "@/lib/content-agent/handoff";
 import { resolveApprovedClaims } from "@/lib/content-agent/claim-registry";
 import { buildNextCycleHandoff } from "./build-handoff";
 import { chooseBaseline } from "./cycle-rules";
+import { assertClaimRowsValid, assertDraftIntegrity } from "./draft-integrity";
 import { proposalFromRow } from "@/lib/persistence/proposals";
 import { ControllerError, TransitionError } from "./errors";
 
@@ -56,12 +56,7 @@ export async function generateContentInTransaction(db: Db, experimentId: string,
     }
     // A clear 409 rather than a schema exception, which would surface as a 500
     // when approval generates the next pair in the same transaction.
-    const parsedBaseline = contentDnaSchema.safeParse(source.contentDna);
-    if (!parsedBaseline.success) {
-      const fields = [...new Set(parsedBaseline.error.issues.map((issue) => issue.path.join(".") || "(whole record)"))];
-      throw new TransitionError(`Baseline draft ${source.id} has invalid Content DNA (${fields.join(", ")}).`, 409);
-    }
-    baseline = parsedBaseline.data;
+    baseline = assertDraftIntegrity(source, experiment.correlationId, "be the Cycle 2 baseline");
     brief = baseline.brief;
     const metrics = await db.metricRecord.findMany({ where: { experimentId: experiment.parentExperimentId, id: { in: handoff.metric_ids } } });
     if (metrics.length !== new Set(handoff.metric_ids).size || handoff.findings.some((f) => f.metric_ids.some((id) => !handoff.metric_ids.includes(id)))) {
@@ -83,11 +78,9 @@ export async function generateContentInTransaction(db: Db, experimentId: string,
   }
   const rows = await db.claim.findMany({ where: { id: { in: handoff.approved_claim_ids } } });
   // Map the database's reviewed statuses explicitly into the Content Agent registry.
-  const registry = rows.map((row) => {
-    claimSchema.parse({ claim_id: row.id, text: row.text, status: row.status, source_or_evidence: row.sourceOrEvidence,
-      reviewer: row.reviewer, reviewed_at: row.reviewedAt.toISOString(), demo_only: row.demoOnly });
-    return { id: row.id, text: row.text, status: row.status === "verified_claim" || row.status === "approved_demo_claim" ? "approved" as const : "rejected" as const };
-  });
+  assertClaimRowsValid(rows);
+  const registry = rows.map((row) => ({ id: row.id, text: row.text,
+    status: row.status === "verified_claim" || row.status === "approved_demo_claim" ? "approved" as const : "rejected" as const }));
   try { resolveApprovedClaims(handoff.approved_claim_ids, registry); }
   catch { throw new TransitionError("Handoff contains unknown or unapproved claims.", 409); }
   if (baseline && (baseline.claim_ids_used.length !== handoff.approved_claim_ids.length || baseline.claim_ids_used.some((id) => !handoff.approved_claim_ids.includes(id)))) {

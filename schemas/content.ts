@@ -20,7 +20,8 @@ export const contentDnaSchema = dimensionFieldsSchema.extend({
   icp: z.string().min(1), channel: z.literal("linkedin_organic"),
   primary_test_variable: testVariableSchema,
   variant_role: z.enum(["control", "variant"]),
-  claim_ids_used: z.array(z.string().min(1)).min(1),
+  claim_ids_used: z.array(z.string().min(1)).min(1)
+    .refine((ids) => new Set(ids).size === ids.length, "Duplicate claim IDs"),
   brief: contentBriefSchema,
   // Full approved evidence is retained server-side; logs contain hashes only.
   generation_context: z.object({
