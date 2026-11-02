@@ -1,14 +1,27 @@
+import { resolveApprovedClaims, type ClaimRegistry } from "./claim-registry";
 import { validateBrief, type CampaignBrief } from "./validate-brief";
 
 export type PostVariation = {
   id: "A" | "B";
   content: string;
   approvalStatus: "pending";
+  experimentVariable?: ExperimentVariable;
+  claimIds?: string[];
+  hook?: string;
+  pain_point?: string;
+  value_proposition?: string;
+  evidence?: string;
+  cta?: string;
 };
+
+export type ExperimentVariable = "pain_point" | "hook" | "value_proposition" | "evidence" | "cta";
 
 export type ContentStyle = "standard" | "concise" | "detailed";
 
 export type GenerationOptions = {
+  experimentVariable?: ExperimentVariable;
+  claimRegistry?: ClaimRegistry;
+  claimIds?: string[];
   style?: ContentStyle;
   callToAction?: "question" | "share";
 };
@@ -21,13 +34,42 @@ export function generatePosts(
   brief: CampaignBrief,
   options: GenerationOptions = {}
 ): PostVariation[] {
-  const validation = validateBrief(brief);
+  const resolvedBrief = options.claimRegistry !== undefined || options.claimIds !== undefined
+    ? { ...brief, approvedClaims: resolveApprovedClaims(options.claimIds ?? [], options.claimRegistry ?? []) }
+    : brief;
+  const validation = validateBrief(resolvedBrief);
   if (!validation.valid) throw new Error(validation.errors.join(" "));
+
+  // Explicit experiments vary exactly one field. Keep the legacy generation path
+  // for existing revision-loop callers until the controller is integrated.
+  if (options.experimentVariable !== undefined) {
+    const variable = options.experimentVariable;
+    const supported: ExperimentVariable[] = ["pain_point", "hook", "value_proposition", "evidence", "cta"];
+    if (!supported.includes(variable)) throw new Error("Unsupported experiment variable: " + variable);
+    const common = {
+      hook: "A stronger future starts with a conversation.",
+      pain_point: "Community teams need practical ways to make progress.",
+      value_proposition: normalize(brief.keyMessage),
+      evidence: resolvedBrief.approvedClaims.map(normalize).join("\n"),
+      cta: "What practical step would you prioritize?"
+    };
+    const variants: Record<ExperimentVariable, [string, string]> = {
+      hook: ["Behind every community initiative is a story worth hearing.", "What if the next breakthrough starts with your team?"],
+      pain_point: ["Important community work can be hard to coordinate.", "Too many teams struggle to turn good intentions into action."],
+      value_proposition: [common.value_proposition, "Together, we can move forward: " + common.value_proposition],
+      evidence: [common.evidence, "Approved information:\n" + common.evidence],
+      cta: ["What practical step would you prioritize?", "Which action would you take first?"]
+    };
+    return (["A", "B"] as const).map((id, index) => {
+      const fields = { ...common, [variable]: variants[variable][index] };
+      return { id, ...fields, claimIds: options.claimIds, experimentVariable: variable, content: [fields.hook, fields.pain_point, fields.value_proposition, fields.evidence, fields.cta].join("\n\n"), approvalStatus: "pending" as const };
+    });
+  }
 
   const audience = normalize(brief.audience);
   const goal = normalize(brief.campaignGoal);
   const message = normalize(brief.keyMessage);
-  const claims = brief.approvedClaims.map(normalize);
+  const claims = resolvedBrief.approvedClaims.map(normalize);
   const style = options.style ?? "standard";
   const question = options.callToAction === "share"
     ? "Share this with someone working toward the same goal."
@@ -60,7 +102,7 @@ export function generatePosts(
 
   if (a === b) throw new Error("A/B drafts must have distinct framing.");
   return [
-    { id: "A", content: a, approvalStatus: "pending" },
-    { id: "B", content: b, approvalStatus: "pending" }
+    { id: "A", content: a, claimIds: options.claimIds, approvalStatus: "pending" },
+    { id: "B", content: b, claimIds: options.claimIds, approvalStatus: "pending" }
   ];
 }
