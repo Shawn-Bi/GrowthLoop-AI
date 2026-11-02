@@ -2,7 +2,7 @@
 
 This report records actual results only (PRD §10). Anything not run is marked as such.
 
-**Last updated:** 2026-10-29, on branch `feature/cycle2-baseline-limit`. This branch stacks the integrated Content loop (#14), handoff v1.1 (#16) and the outcome/cycle-limit rules on top of #3–#12. Node 24.15.0, Windows. S2 and S4 were re-run on this branch's preview on 2026-10-29 (see the end of the Vercel section). S3 and S5 are from the 2026-10-23 runs.
+**Last updated:** 2026-11-01, on branch `feature/grantready-demo`. This branch stacks the GrantReady seed data and the Claude-backed Content Agent on PR #19, with `main`, #8, #9 and #10 merged in. Node 24.15.0, Windows. S2 and S4 were re-run on the #19 and this branch's previews on 2026-11-01. S3 and S5 are from the 2026-10-23 runs.
 
 ## Summary
 
@@ -10,13 +10,14 @@ This report records actual results only (PRD §10). Anything not run is marked a
 |---|---|---|
 | S0 toolchain | ✅ Pass | `npm ci`, `npx prisma -v` (7.10.1), `npm run typecheck`, `npm run build` (re-run 2026-10-29) |
 | S1 Anthropic real API | ✅ Pass | `npm run smoke:anthropic` (re-run 2026-10-29 with the #14 prompt and required `content_change`) |
-| S1b Content DNA schema | ⏳ Not run | Waits for the Content Agent (GL-07) |
+| S1b Content Agent real API | ✅ Pass | `npm run smoke:content`: all five test variables on 2026-11-01 |
+| Two-cycle E2E on a preview | ✅ Pass | `npm run smoke:e2e`, real Claude on both agents, real Neon, seeded claims (2026-11-01) |
 | S2 Neon persistence (local) | ✅ Pass | `npm run db:migrate`, `smoke:db:write` → new process → `smoke:db:read` → `smoke:db:cleanup` |
 | S2 Vercel preview | ✅ Pass | `smoke:deploy:write` → redeploy → `smoke:deploy:read` → `smoke:deploy:cleanup` |
 | S3 secrets and client boundary | ✅ Pass | Bundle scan, `.env.local` gitignored, smoke output scan |
 | S4 Vercel runtime | ✅ Pass | `npm run smoke:deploy`, `smoke:deploy:write` against the preview |
 | S5 access protection and daily cap | ✅ Pass (local) | Automated route tests, plus browser and HTTP checks against `next start` |
-| S6 no-cost unit tests | ✅ Pass | `npm test`: 225/225 (2026-10-29), with mocked Anthropic and PGlite, including the two-cycle Content ↔ Analytics integration tests |
+| S6 no-cost unit tests | ✅ Pass | `npm test`: 346/346 (2026-11-01), with mocked Anthropic and PGlite, including the two-cycle Content ↔ Analytics integration tests |
 
 ## S1 — Anthropic (real API)
 
@@ -32,6 +33,27 @@ This report records actual results only (PRD §10). Anything not run is marked a
   - The output was schema-valid on the **first attempt**, with `stop_reason: end_turn`.
   - Usage: 3,366 input and 2,080 output tokens, 18.2 s.
   - The proposal was `needs_human_approval` with 0 review flags and 0 errors, and its primary test variable was `hook`.
+
+## S1b — Content Agent (real API)
+
+- **Run on 2026-11-01** through `runContentAgent`, once for each of the five test variables, with the seeded GrantReady brief, ICP, claims and banned phrases.
+- All five were schema-valid on the **first attempt**, with `stop_reason: end_turn`, so no repair turn was needed.
+- Usage per run: about 1.9k input and 280–340 output tokens, 2.4–4.6 s.
+
+## Two-cycle E2E (GL-10/GL-11)
+
+- **Run on 2026-11-01** with `npm run smoke:e2e` against the `feature/grantready-demo` preview at `76e535a`, after `npm run db:seed` loaded registry `grantready-demo-v1` into Neon (4 `approved_demo_claim`, 3 `rejected_claim`). `npm run smoke:deploy` passed first: health 200, API without a code 401, page 307.
+- **Cycle 1:**
+  - `exp_001` was created (201).
+  - Real Claude wrote the pair in 4.8 s (201). Only the hook differs. Each draft carries the hypothetical label and the three approved claims word for word.
+  - Both drafts were approved (200 each).
+  - `demo_fixture_v1` saved 14 metrics and quarantined 2 rows (201).
+  - The KPIs match Michelle's expected values: 10.0% (8/80) and 15.0% (15/100) per visit, 8.0% (8/100) and 12.5% (15/120) per click.
+  - Real Claude analysis took 11.2 s (201), with 0 review flags. It proposed changing `cta`.
+- **Decision:** approved with outcome `variant_better` (200). The stored handoff is `schema_version: "1.1"`, with the Cycle 1 variant as the baseline.
+- **Cycle 2:** `exp_002` has parent `exp_001` and two `pending_approval` drafts. Its control equals the Cycle 1 variant, and the pair differs only in `cta`. The trace returns `exp_001 → exp_002`.
+- **Browser:** the `exp_001` and `exp_002` pages were checked on a local `next start` against Neon: drafts, KPI table, proposal, approved findings and the read-only registry all render.
+- **Proposals vary between runs**, as in S1, so the demo script reads the proposal from the screen.
 
 ## S2 — Neon PostgreSQL
 
@@ -76,6 +98,8 @@ This report records actual results only (PRD §10). Anything not run is marked a
   - **Cleanup:** the `exp_smoke_*` rows and the `clm_smoke_*` claim were removed.
   - **Not run on the preview:** the refused case (an invalid baseline gets 409 and nothing is committed). The integration tests cover it: `tests/integration/content-dna-validation.test.ts`.
 
+- **Re-run on 2026-11-01** against the #19 preview at `02d375f`: S4 passed. The real-Claude analysis returned 201 in 14.2 s with 0 review flags, the decision returned 200, and `exp_smoke_002` had both Cycle 2 drafts. The smoke rows were removed. This run covered the normal path only; the refused cases are in `tests/integration/review-findings.test.ts`.
+
 ## S3 / S5 — Secrets and access
 
 - `.next/static` contains none of `sk-ant`, `DEMO_ACCESS_CODE` or `DATABASE_URL`.
@@ -86,6 +110,6 @@ This report records actual results only (PRD §10). Anything not run is marked a
 
 ## Not yet covered
 
-- **Two-cycle E2E with real Content Agent drafts and real Claude, on the Vercel preview (GL-10/GL-11).** The same flow passes in `tests/integration/*` over the production API handlers with PGlite, but there the Anthropic transport is stubbed.
-- **KPI exact match against Michelle's `expected.json` (GL-03/GL-08).** Her #15 test passed 38/38 against the #4 KPI code in a local check on 2026-10-29. It's recorded here once #15 is merged into #4.
-- **A production deployment of this stack.** `main` has #3 only; the rest reaches it as #4–#12 merge.
+- **Independent verification of PR #19 and this branch.** Michelle's review covers commits up to #17.
+- **Refusals on a deployment.** Banned content, invalid claims and model failures are covered by `tests/integration/*`, not by a live run.
+- **A production deployment of this stack.** `main` has #3 and #4 only; the rest needs one approval to reach it.
