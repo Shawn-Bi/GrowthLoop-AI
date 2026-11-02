@@ -7,6 +7,7 @@ import { POST as analyse } from "@/app/api/experiments/[experimentId]/analysis/r
 import { POST as decideProposalRoute } from "@/app/api/proposals/[proposalId]/decision/route";
 import { ingestExperimentMetrics } from "@/lib/controller/workflow";
 import { contentDnaSchema } from "@/schemas/content";
+import { fakeContentModel } from "../content-agent/fake-model";
 import { setupTestDb } from "../persistence/db";
 import { controlRow, variantRow } from "../kpi/fixtures";
 import { validOutput } from "../analytics/fixtures";
@@ -31,6 +32,7 @@ const approve = (outcome?: string, proposalId = "prop_exp_001_1") =>
 beforeEach(async () => {
   mocks.db = getDb().db;
   mocks.create.mockReset();
+  mocks.create.mockImplementation(fakeContentModel);
   vi.stubEnv("DEMO_ACCESS_CODE", "cycle-baseline-code");
   vi.spyOn(console, "info").mockImplementation(() => {});
   await getDb().db.claim.create({ data: { id: "clm_ok", registryVersion: "v1", text: "GrantReady is hypothetical.", status: "approved_demo_claim", demoOnly: true, reviewer: "Michelle", reviewedAt: new Date(), sourceOrEvidence: "Approved hypothetical demo" } });

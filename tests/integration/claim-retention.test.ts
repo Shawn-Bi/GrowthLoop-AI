@@ -4,12 +4,14 @@ import { POST as create } from "@/app/api/experiments/route";
 import { POST as generate } from "@/app/api/experiments/[experimentId]/drafts/route";
 import { POST as decideDraftRoute } from "@/app/api/drafts/[draftId]/decision/route";
 import { seedClaimRegistry } from "@/lib/persistence/claims";
+import { fakeContentModel } from "../content-agent/fake-model";
 import { setupTestDb } from "../persistence/db";
 
 // PR #11: a claim dropped from claims.json is kept as rejected_claim, so it
 // can't generate or advance drafts, but drafts that used it still resolve.
 const mocks = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db", () => ({ getDb: () => mocks.db }));
+vi.mock("@/lib/anthropic", () => ({ getAnthropicClient: () => ({ messages: { create: (params: never) => fakeContentModel(params) } }), getAnthropicModel: () => "test-model" }));
 const getDb = setupTestDb();
 const auth = { authorization: "Bearer claim-retention-code" };
 const req = (path: string, body?: unknown) => new NextRequest(`http://localhost${path}`, {

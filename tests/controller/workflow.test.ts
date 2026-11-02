@@ -218,7 +218,7 @@ describe("decideExperimentProposal", () => {
       data: [
         { id: "clm_002", registryVersion: "v1", text: "b", status: "approved_demo_claim", sourceOrEvidence: "demo", reviewer: "Michelle", reviewedAt: now, demoOnly: true },
         { id: "clm_001", registryVersion: "v1", text: "a", status: "verified_claim", sourceOrEvidence: "doc", reviewer: "Michelle", reviewedAt: now, demoOnly: false },
-        { id: "clm_003", registryVersion: "v1", text: "c", status: "rejected_claim", sourceOrEvidence: "none", reviewer: "Michelle", reviewedAt: now, demoOnly: true },
+        { id: "clm_003", registryVersion: "v1", text: "A rejected claim.", status: "rejected_claim", sourceOrEvidence: "none", reviewer: "Michelle", reviewedAt: now, demoOnly: true },
       ],
     });
   });

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { findContentIssues } from "@/lib/content-agent/content-checks";
 import { planDraftTransition } from "@/lib/controller/draft-approval";
 import { assertClaimRowsValid, assertDraftIntegrity } from "@/lib/controller/draft-integrity";
 import { TransitionError } from "@/lib/controller/errors";
@@ -63,6 +64,11 @@ export async function decideDraft(
       if (claims.some((claim) => !draft.body.includes(claim.text) || (claim.status === "approved_demo_claim" &&
           (!claim.demoOnly || !draft.body.includes("Hypothetical product — demonstration only"))))) {
         throw new TransitionError("Draft claim text or demo label no longer matches the registry.", 409);
+      }
+      const rejected = await tx.claim.findMany({ where: { status: "rejected_claim" }, select: { text: true } });
+      const issues = findContentIssues(draft.body, rejected.map((claim) => claim.text));
+      if (issues.length > 0) {
+        throw new TransitionError(`Draft ${draft.id} can't be approved: it contains ${issues.join(", ")}.`, 409);
       }
       const { correlationId } = await tx.experiment.findUniqueOrThrow({
         where: { id: draft.experimentId },

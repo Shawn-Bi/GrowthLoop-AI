@@ -1,3 +1,4 @@
+import { findBannedPhrases } from "@/lib/content-agent/content-checks";
 import type { AnalyticsOutput } from "@/schemas/analytics";
 import type { MetricRecord } from "@/schemas/metrics";
 
@@ -122,6 +123,16 @@ export function reviewAnalysis(
       errors: [
         `One-variable test required: the proposal changes ${[...changed].join(", ")}, but it may change only its primary test variable, ${primary_test_variable}. Run the analysis again.`,
       ],
+    };
+  }
+
+  // The replacement becomes post copy in Cycle 2, so stop it here, where the
+  // approver can see why.
+  const banned = findBannedPhrases(output.proposal.content_change.variant_value);
+  if (banned.length > 0) {
+    return {
+      ok: false,
+      errors: banned.map((phrase) => `The proposed replacement text uses the banned phrase "${phrase}". Run the analysis again.`),
     };
   }
 

@@ -10,6 +10,8 @@ import { ingestExperimentMetrics } from "@/lib/controller/workflow";
 import { contentDnaSchema } from "@/schemas/content";
 import { mapExperimentVariable, receiveContentHandoff } from "@/lib/content-agent/handoff";
 import { testVariableSchema } from "@/schemas/analytics";
+import type { ContentAgentInput } from "@/lib/agents/content/prompt";
+import { fakeContentModel } from "../content-agent/fake-model";
 import { setupTestDb } from "../persistence/db";
 import { controlRow, variantRow } from "../kpi/fixtures";
 import { validOutput } from "../analytics/fixtures";
@@ -32,6 +34,7 @@ const traces: unknown[] = [];
 beforeEach(async () => {
   mocks.db = getDb().db;
   mocks.create.mockReset();
+  mocks.create.mockImplementation(fakeContentModel);
   traces.length = 0;
   vi.stubEnv("DEMO_ACCESS_CODE", "integration-test-code");
   vi.spyOn(console, "info").mockImplementation((line: string) => { traces.push(JSON.parse(line)); });
@@ -65,7 +68,7 @@ async function analyseFirst() {
 }
 it("runs the two-cycle API workflow with real Content code, Analytics parsing, SQL persistence and a shared handoff trace", async () => {
   const first = await analyseFirst();
-  const call = mocks.create.mock.calls[0][0];
+  const call = mocks.create.mock.calls.at(-1)![0];
   const sent = JSON.parse(call.messages[0].content.split("\n\n")[1]);
   expect(sent.metrics).toHaveLength(14);
   expect(sent.drafts.map((d: { content_id: string }) => d.content_id).sort()).toEqual(first.map((d) => d.id).sort());
@@ -242,19 +245,21 @@ it("retains generated DNA and handoff evidence after closing and reopening Postg
   const { createTestDb } = await import("../persistence/db");
   const { generateExperimentContent } = await import("@/lib/controller/content-generation");
   const { createCycleOneExperiment } = await import("@/lib/controller/workflow");
+  const { runContentAgent } = await import("@/lib/agents/content/run");
+  const runAgent = (agentInput: ContentAgentInput) => runContentAgent({ messages: { create: fakeContentModel } } as never, "test-model", agentInput);
   const dir = await mkdtemp(join(tmpdir(), "growthloop-restart-"));
   let stored = await createTestDb(dir);
   try {
     await stored.db.claim.create({ data: { id: "clm_ok", registryVersion: "v1", text: "GrantReady is hypothetical.", status: "approved_demo_claim", demoOnly: true, reviewer: "Michelle", reviewedAt: new Date(), sourceOrEvidence: "Demo" } });
     await createCycleOneExperiment(stored.db, { hypothesis: "Compare hooks", primaryTestVariable: "hook" });
-    await generateExperimentContent(stored.db, "exp_001", input, () => {});
+    await generateExperimentContent(stored.db, "exp_001", input, runAgent, new Date(), () => {});
     const before = await stored.db.contentDraft.findMany({ orderBy: { id: "asc" } });
     await stored.close();
     stored = await createTestDb(dir);
     const after = await stored.db.contentDraft.findMany({ orderBy: { id: "asc" } });
     expect(after).toEqual(before);
     expect(contentDnaSchema.parse(after[0].contentDna).generation_context.correlation_id).toBe("corr_exp_001");
-    await expect(generateExperimentContent(stored.db, "exp_001", input, () => {})).rejects.toThrow("already exist");
+    await expect(generateExperimentContent(stored.db, "exp_001", input, runAgent, new Date(), () => {})).rejects.toThrow("already exist");
   } finally { await stored.close(); await rm(dir, { recursive: true, force: true }); }
 });
 it("serializes concurrent generation into one persisted pair", async () => {

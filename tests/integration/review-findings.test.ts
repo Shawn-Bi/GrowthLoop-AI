@@ -8,6 +8,7 @@ import { POST as decideProposalRoute } from "@/app/api/proposals/[proposalId]/de
 import { ingestExperimentMetrics } from "@/lib/controller/workflow";
 import type { AnalyticsOutput } from "@/schemas/analytics";
 import { handoffSchema } from "@/schemas/handoff";
+import { fakeContentModel } from "../content-agent/fake-model";
 import { setupTestDb } from "../persistence/db";
 import { controlRow, variantRow } from "../kpi/fixtures";
 import { validOutput } from "../analytics/fixtures";
@@ -37,6 +38,7 @@ const approveProposal = () => decideProposalRoute(
 beforeEach(async () => {
   mocks.db = db();
   mocks.create.mockReset();
+  mocks.create.mockImplementation(fakeContentModel);
   vi.stubEnv("DEMO_ACCESS_CODE", "review-findings-code");
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -225,7 +227,7 @@ describe("approval re-review", () => {
 });
 
 describe("analysis gate", () => {
-  beforeEach(async () => { await approveBoth(); });
+  beforeEach(async () => { await approveBoth(); mocks.create.mockClear(); });
   const expectAnalysisRefused = async (message: string) => {
     await expectRefused(await loadAndAnalyse(), message);
     expect(mocks.create).not.toHaveBeenCalled();

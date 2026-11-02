@@ -2,7 +2,7 @@ import type {
   AnalysisReport,
   PrismaClient,
 } from "@/generated/prisma/client";
-import type { AgentRunRecord } from "@/lib/agents/analytics/run";
+import type { AgentRunRecord } from "@/lib/agents/structured-run";
 import {
   proposalRecordSchema,
   type ProposalRecord,
