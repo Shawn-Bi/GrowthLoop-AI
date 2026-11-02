@@ -52,7 +52,8 @@ This report records actual results only (PRD §10). Anything not run is marked a
   - Real Claude analysis took 11.2 s (201), with 0 review flags. It proposed changing `cta`.
 - **Decision:** approved with outcome `variant_better` (200). The stored handoff is `schema_version: "1.1"`, with the Cycle 1 variant as the baseline.
 - **Cycle 2:** `exp_002` has parent `exp_001` and two `pending_approval` drafts. Its control equals the Cycle 1 variant, and the pair differs only in `cta`. The trace returns `exp_001 → exp_002`.
-- **Browser:** the `exp_001` and `exp_002` pages were checked on a local `next start` against Neon: drafts, KPI table, proposal, approved findings and the read-only registry all render.
+- **Read after a redeploy:** pushing `e112342` produced a new deployment. It returned `exp_002` with its parent, handoff v1.1 and both drafts (200), and the trace `exp_001 → exp_002` (200).
+- **Browser run:** after a reset, the whole demo was clicked through on a local `next start` with real Claude and Neon: prefilled Start and Generate forms, read-only registry, both draft approvals, Load metrics with the two quarantine reasons, Run Analytics Agent, outcome and approval, then `exp_002`. Claude proposed `cta` again. Analysis took under 18 s, and the console showed no errors. This run wasn't on the Vercel preview.
 - **Proposals vary between runs**, as in S1, so the demo script reads the proposal from the screen.
 
 ## S2 — Neon PostgreSQL

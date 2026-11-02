@@ -1,12 +1,12 @@
 # GrowthLoop AI — 2-minute demo script
 
-Solo, about 280 words, for a recorded screen capture. Claude's replies take a few seconds each, so **record first and cut the waits**: every step below is one continuous clip with the spinner trimmed. Read what's on screen where the script says so, because the model's wording changes each run.
+Solo, for a recorded screen capture. Generating drafts took about 5 seconds and analysis 11–18 seconds in testing, so **record first and cut the waits**. Read the proposal from the screen where the script says so, because Claude's wording and its proposed variable change each run.
 
 ## Before recording
 
 1. Run `npm run demo:reset -- --yes` so the run starts at `exp_001`.
-2. Sign in on the preview in a clean window, and zoom the browser to about 125%.
-3. Do one full rehearsal, reset, then record.
+2. Open <https://growth-loop-ai-git-feature-grantready-demo-shawn-9964.vercel.app>, sign in to Vercel if asked, and enter `DEMO_ACCESS_CODE`.
+3. Do one full rehearsal, run the reset again, then record.
 
 ## Script
 
@@ -17,7 +17,7 @@ Solo, about 280 words, for a recorded screen capture. Claude's replies take a fe
 | 0:35–0:50 | Show both drafts, then click **approve** on each | "Every draft is labeled as a demonstration, and nothing moves until a person approves it. I'm approving both. Nothing here publishes automatically." |
 | 0:50–1:15 | Click **Load metrics**, scroll to the table and the quarantine note, then click **Run Analytics Agent** | "Now I load simulated results. The system does the math, not the AI, and it quarantined two bad rows. The variant reached 15 percent qualified demos per visit, against 10 percent for the control. The Analytics Agent can only cite these stored metrics, and it has to state its uncertainty." |
 | 1:15–1:40 | Show the proposal: findings, uncertainty, the proposed change. Pick **Variant did better**, click **Approve proposal** | "It proposes exactly one change, with a stop rule. Here it suggests [read the proposed change]. The numbers are simulated, so this isn't proof of what works, and that's why I make the call. I'll record that the variant did better, and approve." |
-| 1:40–1:55 | Click **Next cycle: exp_002**. Show the approved findings and both drafts | "Cycle 2 starts from saved Experiment Memory. The variant is now the baseline, and the only change is the one I approved. These drafts wait for human review again." |
+| 1:40–1:55 | Scroll to the top and click **Next cycle: exp_002**. Show the approved findings and both drafts | "Cycle 2 starts from saved Experiment Memory. The variant is now the baseline, and the only change is the one I approved. These drafts wait for human review again." |
 | 1:55–2:00 | Stay on `exp_002` | "That's the loop: two agents, one human in charge. Thank you." |
 
 ## Keep it accurate
