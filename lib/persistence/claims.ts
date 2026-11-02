@@ -79,6 +79,23 @@ export async function seedClaimRegistry(
   });
 }
 
+export type RegistryClaim = {
+  id: string;
+  text: string;
+  status: string;
+  registryVersion: string;
+};
+
+// The read-only registry shown to reviewers (PRD §3 step 1).
+export async function listRegistryClaims(
+  db: Pick<PrismaClient, "claim">
+): Promise<RegistryClaim[]> {
+  return db.claim.findMany({
+    select: { id: true, text: true, status: true, registryVersion: true },
+    orderBy: { id: "asc" },
+  });
+}
+
 // Claim IDs the Content Agent may use: approved demo claims and verified
 // claims, never rejected or unknown ones.
 export async function loadUsableClaimIds(

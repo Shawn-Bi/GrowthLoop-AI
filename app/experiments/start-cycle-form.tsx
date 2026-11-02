@@ -3,10 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-export function StartCycleForm({ testVariables }: { testVariables: string[] }) {
+export function StartCycleForm({
+  testVariables,
+  defaultHypothesis,
+  defaultVariable,
+}: {
+  testVariables: string[];
+  defaultHypothesis: string;
+  defaultVariable: string;
+}) {
   const router = useRouter();
-  const [hypothesis, setHypothesis] = useState("");
-  const [testVariable, setTestVariable] = useState(testVariables[0] ?? "");
+  const [hypothesis, setHypothesis] = useState(defaultHypothesis);
+  const [testVariable, setTestVariable] = useState(defaultVariable);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 

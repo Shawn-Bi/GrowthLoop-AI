@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { requirePageAccess } from "@/lib/auth/page-access";
+import { grantReadyBrief } from "@/lib/content-agent/seed";
 import { ControllerError } from "@/lib/controller/errors";
 import { listExperiments, type ExperimentSummary } from "@/lib/controller/overview";
 import { CYCLE_ONE_EXPERIMENT_ID } from "@/lib/controller/workflow";
@@ -15,7 +16,7 @@ export default function ExperimentsPage() {
       <div className="mx-auto max-w-4xl space-y-8">
         <header className="space-y-3">
           <p className="text-sm font-semibold uppercase tracking-widest text-cyan-400">
-            Analytics &amp; Experiment Agent
+            GrowthLoop AI
           </p>
           <h1 className="text-4xl font-bold">Experiments</h1>
           <DemoLabels />
@@ -46,7 +47,11 @@ async function ExperimentList() {
   return (
     <div className="space-y-6">
       {!hasCycleOne && (
-        <StartCycleForm testVariables={testVariableSchema.options} />
+        <StartCycleForm
+          testVariables={testVariableSchema.options}
+          defaultHypothesis={grantReadyBrief.default_hypothesis}
+          defaultVariable={grantReadyBrief.default_test_variable}
+        />
       )}
       <ul className="space-y-3">
         {experiments.map((experiment) => (

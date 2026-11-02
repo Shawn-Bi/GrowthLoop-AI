@@ -239,7 +239,13 @@ export function ProposalDecision({
   );
 }
 
-export function GenerateContentPanel({ experimentId }: { experimentId: string }) {
+export function GenerateContentPanel({
+  experimentId,
+  defaults,
+}: {
+  experimentId: string;
+  defaults: { audience: string; goal: string; message: string; claims: string };
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -259,10 +265,10 @@ export function GenerateContentPanel({ experimentId }: { experimentId: string })
     finally { setPending(false); }
   }
   return <form onSubmit={submit} className="grid gap-3">
-    <p>Generate two hypothetical drafts using reviewed registry claims. Both require human approval.</p>
-    {[["audience", "Audience"], ["goal", "Campaign goal"], ["message", "Approved key message"], ["claims", "Approved claim IDs (comma-separated)"]].map(([name, label]) =>
-      <label key={name} className="grid gap-1">{label}<input required name={name} className="rounded bg-slate-800 p-2" /></label>)}
-    <button disabled={pending} className="rounded bg-cyan-500 p-2 text-slate-950">{pending ? "Generating…" : "Generate A/B drafts"}</button>
+    <p>The Content Agent writes the control and variant with Claude, using only reviewed registry claims. Both drafts require human approval.</p>
+    {([["audience", "Audience"], ["goal", "Campaign goal"], ["message", "Approved key message"], ["claims", "Approved claim IDs (comma-separated)"]] as const).map(([name, label]) =>
+      <label key={name} className="grid gap-1">{label}<input required name={name} defaultValue={defaults[name]} className="rounded bg-slate-800 p-2" /></label>)}
+    <button disabled={pending} className="rounded bg-cyan-500 p-2 font-bold text-slate-950 disabled:opacity-40">{pending ? "Generating… this can take a minute" : "Generate A/B drafts"}</button>
     <ErrorMessage message={error} />
   </form>;
 }

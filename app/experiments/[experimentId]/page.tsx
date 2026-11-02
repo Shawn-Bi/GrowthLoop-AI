@@ -9,6 +9,8 @@ import {
   type ExperimentOverview,
 } from "@/lib/controller/overview";
 import { getDb } from "@/lib/db";
+import { grantReadyBrief, grantReadyIcp } from "@/lib/content-agent/seed";
+import { listRegistryClaims, type RegistryClaim } from "@/lib/persistence/claims";
 import type { ProposalRecord } from "@/schemas/analytics";
 import type { MetricRecord } from "@/schemas/metrics";
 import { DemoLabels, StatusBadge } from "../labels";
@@ -46,6 +48,37 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+// The seeded GrantReady context, read-only (PRD §3 step 1).
+function CampaignContext({ registry }: { registry: RegistryClaim[] }) {
+  return (
+    <details className="rounded-2xl border border-slate-700 bg-slate-900 p-6">
+      <summary className="cursor-pointer text-lg font-semibold">
+        GrantReady brief, ICP and claim registry (read-only)
+      </summary>
+      <div className="mt-4 space-y-3 text-slate-200">
+        <p>{grantReadyBrief.product_description}</p>
+        <p><span className="font-semibold">ICP:</span> {grantReadyIcp.label}. {grantReadyIcp.evidence_note}</p>
+        {registry.length === 0 ? (
+          <p role="alert" className="rounded-lg bg-amber-950 p-3 text-amber-100">
+            The claim registry is empty. Run <code>npm run db:seed</code> before generating drafts.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-slate-400">Registry {registry[0].registryVersion}</p>
+            <ul className="space-y-1">
+              {registry.map((claim) => (
+                <li key={claim.id} className="text-sm">
+                  <code>{claim.id}</code> · <StatusBadge status={claim.status} /> {claim.text}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    </details>
+  );
+}
+
 function formatRate(metric: Extract<MetricRecord, { kind: "rate" }>): string {
   return metric.value === null
     ? `not calculable (${metric.not_calculable_reason})`
@@ -61,8 +94,10 @@ async function ExperimentDetail({
   const { experimentId } = await params;
 
   let overview: ExperimentOverview | null;
+  let registry: RegistryClaim[];
   try {
     overview = await loadExperimentOverview(getDb(), experimentId);
+    registry = await listRegistryClaims(getDb());
   } catch (error) {
     if (error instanceof ControllerError) {
       return <p role="alert" className="rounded-lg bg-red-950 p-4 text-red-200">{error.message}</p>;
@@ -112,6 +147,8 @@ async function ExperimentDetail({
         </p>
       </header>
 
+      <CampaignContext registry={registry} />
+
       {handoff && (
         <Section title={`Approved findings from ${handoff.parent_experiment_id}`}>
           <p className="text-slate-300">
@@ -154,7 +191,17 @@ async function ExperimentDetail({
       </Section>
 
       {isOpen && drafts.length === 0 && !experiment.parent_experiment_id && (
-        <Section title="Generate Content"><GenerateContentPanel experimentId={experiment.id} /></Section>
+        <Section title="Generate Content">
+          <GenerateContentPanel
+            experimentId={experiment.id}
+            defaults={{
+              audience: grantReadyBrief.brief.audience,
+              goal: grantReadyBrief.brief.campaignGoal,
+              message: grantReadyBrief.brief.keyMessage,
+              claims: grantReadyBrief.default_claim_ids.join(", "),
+            }}
+          />
+        </Section>
       )}
       <Section title="Simulated metrics">
         <MetricsTable metrics={metrics} />
