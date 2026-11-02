@@ -2,8 +2,10 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   SESSION_COOKIE,
+  bearerCode,
   checkAccessCode,
-  isAuthorizedRequest,
+  clientAddress,
+  hasValidSession,
   issueSessionToken,
   isValidSessionToken,
 } from "@/lib/auth/access";
@@ -11,6 +13,10 @@ import { proxy } from "@/proxy";
 
 function request(path: string, headers: Record<string, string> = {}) {
   return new NextRequest(`http://localhost${path}`, { headers });
+}
+
+function sessionCookie() {
+  return `${SESSION_COOKIE}=${issueSessionToken()}`;
 }
 
 beforeEach(() => {
@@ -33,9 +39,6 @@ describe("access code", () => {
 
     expect(checkAccessCode("")).toBe(false);
     expect(isValidSessionToken("anything")).toBe(false);
-    expect(
-      isAuthorizedRequest(request("/api/health", { authorization: "Bearer " }))
-    ).toBe(false);
   });
 
   it("issues a session token that never contains the code itself", () => {
@@ -53,31 +56,22 @@ describe("access code", () => {
   });
 });
 
-describe("isAuthorizedRequest", () => {
-  it("accepts the session cookie", () => {
-    const cookie = `${SESSION_COOKIE}=${issueSessionToken()}`;
-    expect(isAuthorizedRequest(request("/experiments", { cookie }))).toBe(true);
+describe("request helpers", () => {
+  it("accepts the session cookie and rejects a forged one", () => {
+    expect(hasValidSession(request("/", { cookie: sessionCookie() }))).toBe(true);
+    expect(hasValidSession(request("/", { cookie: `${SESSION_COOKIE}=forged` }))).toBe(false);
   });
 
-  it("accepts a bearer access code for scripts", () => {
-    expect(
-      isAuthorizedRequest(request("/api/x", { authorization: "Bearer correct-code" }))
-    ).toBe(true);
+  it("reads a bearer code", () => {
+    expect(bearerCode(new Headers({ authorization: "Bearer abc" }))).toBe("abc");
+    expect(bearerCode(new Headers({ authorization: "Basic abc" }))).toBeUndefined();
+    expect(bearerCode(new Headers())).toBeUndefined();
   });
 
-  it("rejects a wrong bearer even with a valid cookie", () => {
-    const cookie = `${SESSION_COOKIE}=${issueSessionToken()}`;
-    expect(
-      isAuthorizedRequest(
-        request("/api/x", { cookie, authorization: "Bearer wrong" })
-      )
-    ).toBe(false);
-  });
-
-  it("rejects a forged cookie", () => {
-    expect(
-      isAuthorizedRequest(request("/experiments", { cookie: `${SESSION_COOKIE}=forged` }))
-    ).toBe(false);
+  it("uses the first forwarded address, then x-real-ip, then a fallback", () => {
+    expect(clientAddress(new Headers({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" }))).toBe("203.0.113.7");
+    expect(clientAddress(new Headers({ "x-real-ip": "198.51.100.2" }))).toBe("198.51.100.2");
+    expect(clientAddress(new Headers())).toBe("unknown");
   });
 });
 
@@ -98,11 +92,21 @@ describe("proxy", () => {
     expect(await response.json()).toEqual({ error: "Unauthorized." });
   });
 
-  it("lets authorized requests through", () => {
-    const response = proxy(
-      request("/experiments", { authorization: "Bearer correct-code" })
-    );
+  it("lets pages with a valid session through", () => {
+    const response = proxy(request("/experiments", { cookie: sessionCookie() }));
 
     expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("leaves bearer codes on API calls to the rate-limited route handler", () => {
+    const response = proxy(request("/api/experiments/exp_001", { authorization: "Bearer guess" }));
+
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("doesn't accept a bearer code for pages", () => {
+    const response = proxy(request("/experiments", { authorization: "Bearer correct-code" }));
+
+    expect(response.status).toBe(307);
   });
 });
