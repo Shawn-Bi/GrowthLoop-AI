@@ -38,8 +38,9 @@ No Python, FastAPI, SQLite, monorepo, or generic agent framework (that includes 
 | `app/experiments`, `app/access` | UI pages |
 | `proxy.ts` | Access guard (Next 16 renamed `middleware` to `proxy`) |
 | `lib/controller/` | Workflow, state transitions, handoffs, IDs, errors, HTTP helpers |
-| `lib/agents/analytics/` | Prompt, Anthropic adapter, evidence review |
-| `lib/content-agent/` | Content Agent prototype; planned move to `lib/agents/content/` |
+| `lib/agents/` | `structured-run.ts` Anthropic adapter; `analytics/` prompt and evidence review; `content/` prompt and output checks |
+| `lib/content-agent/` | Handoff receipt, claim registry resolver, content checks, seeded GrantReady context; `generate-posts` and the revision loop aren't reachable from the app |
+| `data/seed/` | GrantReady brief, ICP, claims, banned phrases, evaluation samples |
 | `lib/kpi/` | Fixture ingestion and deterministic KPI math |
 | `lib/persistence/` | Prisma repositories: metrics, proposals, experiments, quota |
 | `lib/auth/` | Demo access code, session cookie, page guard |

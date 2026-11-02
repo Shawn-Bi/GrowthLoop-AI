@@ -1,6 +1,6 @@
 # Content → Analytics → Content integration
 
-Validated locally on 2026-10-28. No production deployment or PR merge was performed.
+Validated locally on 2026-10-28 with the deterministic template, before GL-07. From 2026-11-01 on `feature/grantready-demo`, Cycle 1 uses Claude and the template path is gone from the integrated app; steps 1 and 3 below describe that. The validation figures further down are from 2026-10-28. No production deployment or PR merge was performed.
 
 ## Source snapshots
 
@@ -10,7 +10,7 @@ The integration branch starts from PR #12 (`0a7b43a`), which contains the stacke
 
 1. Create Cycle 1 through `POST /api/experiments` with a hypothesis and one supported `primary_test_variable`.
 2. Call `POST /api/experiments/exp_001/drafts` with `brief: { audience, campaignGoal, keyMessage }` and `approved_claim_ids`. The experiment page exposes this form. Claims must already exist in the reviewed registry; supplied text is not treated as registry approval.
-3. The controller loads and validates registry records, constructs a versioned handoff, and invokes the existing deterministic Content Agent. It persists two pending drafts and typed Content DNA atomically. Exactly one of pain_point/hook/value_proposition/evidence/cta differs. IDs are controller-owned and unique per experiment/role.
+3. The controller loads and validates registry records, constructs a versioned handoff, and calls the Content Agent, which makes one structured Claude call outside any transaction (`lib/agents/content`). A short transaction then re-checks everything and persists two pending drafts and typed Content DNA atomically. Exactly one of pain_point/hook/value_proposition/evidence/cta differs. IDs are controller-owned and unique per experiment/role.
 4. Approve both drafts individually through the existing draft decision API or the experiment UI. Marking ready is a separate human action, never publication.
 5. Load a pre-authored simulated fixture through the metrics API. Run Analytics through the analysis API. The Analytics adapter receives stored DNA and controller-computed metrics mapped to actual generated content IDs.
 6. Analytics proposes a single changed dimension plus `content_change: { baseline_content_id, variant_value }`. Findings, citations, uncertainty and controls remain part of the proposal. The UI displays the concrete baseline and replacement before human approval.

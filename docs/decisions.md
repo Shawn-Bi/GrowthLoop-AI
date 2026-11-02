@@ -1,6 +1,6 @@
 # GrowthLoop AI — Decision Log (GL-01)
 
-**Status: DRAFT, not signed.** Shawn drafted it on 2026-10-23. It was updated on 2026-10-29 after Michelle's independent verification and documentation audit of PRs #4–#17. Nothing here counts as signed until both of us approve this file. Per PRD §12, an approving review on the PR that changes it may serve as sign-off. Disagreements go in PR comments, and we edit before merging.
+**Status: DRAFT, not signed.** Shawn drafted it on 2026-10-23. It was updated on 2026-10-29 after Michelle's independent verification and documentation audit of PRs #4–#17, and on 2026-11-01 when Shawn completed the open GL-02 and GL-07 items himself on `feature/grantready-demo`; Michelle hasn't reviewed that work. Nothing here counts as signed until both of us approve this file. Per PRD §12, an approving review on the PR that changes it may serve as sign-off. Disagreements go in PR comments, and we edit before merging.
 
 **Agreeing on a requirement is not approval of its implementation, and not final integration sign-off.** Michelle's agreement in a PR thread means we agree what the system must do. Whether the code does it is recorded separately below.
 
@@ -29,12 +29,12 @@
 | # | Decision | Status | Where |
 |---|---|---|---|
 | 2.1 | GrantReady is a hypothetical product; GrowthLoop markets it and doesn't implement grant features. | Fixed | PRD §1 |
-| 2.2 | One ICP and geography, one LinkedIn organic channel (`channel: "linkedin_organic"`). | **Open** (GL-02 seed) | `data/seed/icp.json` (missing) |
+| 2.2 | One ICP and geography, one LinkedIn organic channel (`channel: "linkedin_organic"`). | Implemented on branch `feature/grantready-demo` by Shawn on 2026-11-01. Not reviewed by Michelle. | `data/seed/icp.json` |
 | 2.3 | Claim statuses are `approved_demo_claim`, `verified_claim` and `rejected_claim`. Only the first two may be used. Claims are checked at generation, approve and `mark_ready`. A claim dropped from `claims.json` is kept as `rejected_claim`. A stored claim's text and evidence can't be changed: a reworded claim needs a new `claim_id`. Blank or whitespace-only claim fields are rejected. | Requirement agreed (retention: #11; `mark_ready` recheck: #12; both 2026-10-27). Implemented on branch: #11 `28d3afb`, `671b254`; #12 and #14. Open: awaiting Michelle's retest. | `lib/persistence/claims.ts`, `lib/persistence/drafts.ts` |
-| 2.4 | The final GrantReady claims, with evidence and statuses, go in `data/seed/claims.json` and are loaded with `npm run db:seed`. | **Open** (GL-02, Michelle; Shawn reviews and loads). Neon has 0 claims, so the preview can't generate real drafts yet. | `data/seed/claims.json` (missing) |
+| 2.4 | The final GrantReady claims, with evidence and statuses, go in `data/seed/claims.json` and are loaded with `npm run db:seed`. | Implemented on branch `feature/grantready-demo` by Shawn on 2026-11-01: four hypothetical `approved_demo_claim`s and three `rejected_claim` examples, with Shawn as the recorded reviewer. Not reviewed by Michelle. | `data/seed/claims.json` |
 | 2.5 | Outcomes come from Michelle's pre-authored simulated fixture (`demo_fixture_v1.json`, `expected.json`), not real data. CSV upload is P1. | **Verified by Michelle** (#4 at `5270d79`, 38/38 tests, KPIs 10% / 8% / 15% / 12.5%). | PR #15 → #4 |
-| 2.6 | Banned phrases: `data/seed/banned_phrases.json` (unverified guarantees), checked automatically, with humans making the final decision (PRD §4). | **Open** (joint). Proposed split: Michelle checks at generation; Shawn re-checks at approve and `mark_ready`. Not implemented. | — |
-| 2.7 | TEAM_TASKS GL-07 asks for a real Sonnet call that returns two JSON drafts. The Content Agent integrated in this repo builds drafts from templates and doesn't call Claude. | **Open** (Michelle, GL-07): either integrate the model call or document it as a limitation. | `lib/content-agent/` |
+| 2.6 | Banned phrases: `data/seed/banned_phrases.json` (unverified guarantees), checked automatically, with humans making the final decision (PRD §4). | Implemented on branch `feature/grantready-demo` by Shawn on 2026-11-01: checked at generation, approve and `mark_ready`, along with rejected-claim wording and the Analytics replacement text. Not reviewed by Michelle. | `lib/content-agent/content-checks.ts` |
+| 2.7 | TEAM_TASKS GL-07 asks for a real Sonnet call that returns two JSON drafts. | Implemented on branch `feature/grantready-demo` by Shawn on 2026-11-01. Cycle 1 calls Claude. Cycle 2 applies the human-approved change to the baseline without a model call, as agreed on PR #13. Not reviewed by Michelle. | `lib/agents/content/` |
 
 ## 3. Metrics
 
@@ -101,10 +101,12 @@
 | #7 | Reviewer roles are supplied in the request. | Limitation (4.1). |
 | #11 | Restoring a claim ID with changed metadata overwrote history. | Fixed on branch (`671b254`): text and evidence are immutable. Status and reviewer changes keep only the latest value, which is a limitation since there is no change-history table. Awaiting retest. |
 | #11 | Whitespace-only metadata was accepted. | Fixed on branch (`671b254`). Awaiting retest. |
-| #11 | Some lower-level paths bypass claim eligibility. | **Open**: needs the specific paths from Michelle. |
-| #12, #17 | Content DNA consistency. | Partly addressed (`b69b7c4`: DNA must match the draft's role and claims). **Open** for the rest. |
-| All | Banned-phrase enforcement. | **Open** (2.6). |
-| #6, #7, #11, #12, #17 | Remaining unmet expectations (11, 14, 13, 9 and 18 respectively). | **Open**: waiting for Michelle's full list, to sort each into fixed, to fix, or limitation. |
+| #11 | Some lower-level paths bypass claim eligibility (F05–F07, F10–F12). | Limitation: `generatePosts` isn't reachable from any route, and the controller is the enforced boundary. |
+| #16, #17 | Direct Content calls skip Cycle 2 checks (F15–F17). | Fixed on `feature/grantready-demo`: `receiveContentHandoff` checks them itself. |
+| #12, #17 | Content DNA consistency. | Fixed on PR #19 (`12b6b6a`, `871894c`). Not retested. |
+| All | Banned-phrase enforcement. | Fixed on `feature/grantready-demo` (2.6). Not retested. |
+| #6, #7, #11, #12, #16, #17 | Other findings, deduplicated into nine root issues on 2026-11-01. | Fixed on PR #19 (`12b6b6a`–`02d375f`). Not retested. #6's individual items aren't on GitHub, so they can't be matched one by one. |
+| #7, #16, #17; #11 | Reviewer roles (F01); claim status history (F08, F09). | Limitations, stated in the README. |
 
 ## 9. Accounts (no secrets)
 
@@ -120,10 +122,8 @@ Shawn shared the local environment values with Michelle privately on 2026-10-23,
 ## Still open before sign-off
 
 - **1.4 (both):** the official deadline and submission requirements.
-- **2.2, 2.4 and 2.7 (Michelle):** the GL-02 seed and claims, and whether the GL-07 drafts use a real model call.
-- **2.6 (joint):** banned phrases.
-- **Section 8 (Shawn, after Michelle's list):** the remaining findings, then her retest of the fixes.
-- **Joint:** the live two-cycle E2E on the preview with real Content Agent drafts and real Claude, recorded in `docs/test-report.md`.
+- **Independent review:** nobody but Shawn has reviewed PR #19 or `feature/grantready-demo`, including the GrantReady claims. `main` needs one approval.
+- **Live E2E:** the two-cycle run is recorded in `docs/test-report.md` once it has run.
 
 ## Sign-off
 
