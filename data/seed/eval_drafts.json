@@ -1,0 +1,46 @@
+{
+  "eval_version": "grantready-demo-v1",
+  "note": "Labelled samples for the automated content checks (GL-02). A pass means the checks found nothing; a human still reviews every draft.",
+  "samples": [
+    {
+      "sample_id": "eval_001",
+      "expected_issue": "none",
+      "text": "Hypothetical product — demonstration only\n\nDid a grant deadline slip past your team last quarter?\n\nGrantReady is designed to show upcoming grant deadlines in one place."
+    },
+    {
+      "sample_id": "eval_002",
+      "expected_issue": "none",
+      "text": "Hypothetical product — demonstration only\n\nGathering grant materials the night before is hard on a small team.\n\nGrantReady is designed to give each grant application a readiness checklist."
+    },
+    {
+      "sample_id": "eval_003",
+      "expected_issue": "none",
+      "text": "Hypothetical product — demonstration only\n\nWhich grant deadline is hardest to keep track of? GrantReady is designed for small nonprofit teams."
+    },
+    {
+      "sample_id": "eval_004",
+      "expected_issue": "banned_phrase",
+      "text": "Guaranteed grant award for every nonprofit that signs up."
+    },
+    {
+      "sample_id": "eval_005",
+      "expected_issue": "banned_phrase",
+      "text": "A risk-free way to run your grant calendar."
+    },
+    {
+      "sample_id": "eval_006",
+      "expected_issue": "banned_phrase",
+      "text": "You will NEVER   miss a deadline again."
+    },
+    {
+      "sample_id": "eval_007",
+      "expected_issue": "rejected_claim",
+      "text": "Good news: GrantReady raises grant success rates."
+    },
+    {
+      "sample_id": "eval_008",
+      "expected_issue": "rejected_claim",
+      "text": "Join the crowd. GrantReady is used by hundreds of nonprofits."
+    }
+  ]
+}

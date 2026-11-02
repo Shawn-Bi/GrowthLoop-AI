@@ -1,0 +1,13 @@
+{
+  "brief_version": "grantready-demo-v1",
+  "product": "GrantReady",
+  "product_description": "GrantReady is a hypothetical nonprofit grant discovery and application-readiness concept. It exists only to demonstrate GrowthLoop AI; it is not a real product.",
+  "default_hypothesis": "Opening the post on a missed grant deadline will earn more qualified demo requests per landing-page visit than opening on general team workload.",
+  "default_test_variable": "hook",
+  "default_claim_ids": ["clm_gr_001", "clm_gr_002", "clm_gr_003"],
+  "brief": {
+    "audience": "Development directors at small US nonprofits with fewer than 20 staff",
+    "campaignGoal": "Invite development directors to request a demo of the hypothetical GrantReady concept",
+    "keyMessage": "GrantReady is a concept for keeping grant deadlines and application materials in one place, so small teams can start preparing earlier."
+  }
+}

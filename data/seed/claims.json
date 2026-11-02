@@ -1,0 +1,68 @@
+{
+  "registry_version": "grantready-demo-v1",
+  "claims": [
+    {
+      "claim_id": "clm_gr_001",
+      "text": "GrantReady is a hypothetical concept shown for demonstration only.",
+      "status": "approved_demo_claim",
+      "source_or_evidence": "PRD.md section 1: GrantReady is a hypothetical first customer.",
+      "reviewer": "Shawn",
+      "reviewed_at": "2026-11-01",
+      "demo_only": true
+    },
+    {
+      "claim_id": "clm_gr_002",
+      "text": "GrantReady is designed to show upcoming grant deadlines in one place.",
+      "status": "approved_demo_claim",
+      "source_or_evidence": "Hypothetical demo wording based on PRD.md section 1 (grant discovery); no product exists.",
+      "reviewer": "Shawn",
+      "reviewed_at": "2026-11-01",
+      "demo_only": true
+    },
+    {
+      "claim_id": "clm_gr_003",
+      "text": "GrantReady is designed to give each grant application a readiness checklist.",
+      "status": "approved_demo_claim",
+      "source_or_evidence": "Hypothetical demo wording based on PRD.md section 1 (application readiness); no product exists.",
+      "reviewer": "Shawn",
+      "reviewed_at": "2026-11-01",
+      "demo_only": true
+    },
+    {
+      "claim_id": "clm_gr_004",
+      "text": "GrantReady is designed for small nonprofit teams.",
+      "status": "approved_demo_claim",
+      "source_or_evidence": "Hypothetical demo wording based on the ICP in data/seed/icp.json; no product exists.",
+      "reviewer": "Shawn",
+      "reviewed_at": "2026-11-01",
+      "demo_only": true
+    },
+    {
+      "claim_id": "clm_gr_901",
+      "text": "GrantReady wins every grant application.",
+      "status": "rejected_claim",
+      "source_or_evidence": "Rejected: an outcome promise with no evidence.",
+      "reviewer": "Shawn",
+      "reviewed_at": "2026-11-01",
+      "demo_only": true
+    },
+    {
+      "claim_id": "clm_gr_902",
+      "text": "GrantReady raises grant success rates.",
+      "status": "rejected_claim",
+      "source_or_evidence": "Rejected: a performance claim with no evidence, and no product exists to measure.",
+      "reviewer": "Shawn",
+      "reviewed_at": "2026-11-01",
+      "demo_only": true
+    },
+    {
+      "claim_id": "clm_gr_903",
+      "text": "GrantReady is used by hundreds of nonprofits.",
+      "status": "rejected_claim",
+      "source_or_evidence": "Rejected: invented social proof; the product is hypothetical and has no customers.",
+      "reviewer": "Shawn",
+      "reviewed_at": "2026-11-01",
+      "demo_only": true
+    }
+  ]
+}

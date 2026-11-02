@@ -1,0 +1,18 @@
+{
+  "banned_phrases_version": "grantready-demo-v1",
+  "note": "Automated phrase checks are incomplete, so a human reviewer still makes the final decision (PRD section 4). Matching ignores case and repeated spaces.",
+  "phrases": [
+    "guarantee",
+    "risk-free",
+    "100% success",
+    "proven to win",
+    "proven results",
+    "always win",
+    "win every",
+    "never miss",
+    "instant approval",
+    "secure funding",
+    "trusted by",
+    "award-winning"
+  ]
+}

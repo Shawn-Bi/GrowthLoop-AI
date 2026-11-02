@@ -1,0 +1,14 @@
+{
+  "icp_version": "grantready-demo-v1",
+  "icp_id": "icp_small_nonprofit_development_director",
+  "label": "Development directors at small US nonprofits",
+  "role": "Development director or the staff member who leads fundraising",
+  "organization": "US nonprofit with fewer than 20 staff and no dedicated grant writer",
+  "channel": "linkedin_organic",
+  "working_assumptions": [
+    "Grant deadlines are tracked across spreadsheets, inboxes and calendars.",
+    "Application materials are gathered close to each deadline.",
+    "One person often handles grants alongside other fundraising work."
+  ],
+  "evidence_note": "Working assumptions for a demonstration, not customer research."
+}
